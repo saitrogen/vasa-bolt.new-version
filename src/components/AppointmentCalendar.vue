@@ -8,7 +8,7 @@
             <button
               v-for="view in views"
               :key="view.value"
-              @click="currentView = view.value"
+              @click="currentView = view.value as 'day' | 'week' | 'month'"
               :class="[
                 'px-3 py-1 rounded-md text-sm font-medium transition-colors',
                 currentView === view.value
@@ -66,7 +66,7 @@
           <div class="text-sm font-medium text-gray-500">Time</div>
           <div
             v-for="day in weekDays"
-            :key="day.date"
+            :key="day.date.toISOString()"
             class="text-center"
           >
             <div class="text-sm font-medium text-gray-900">
@@ -92,7 +92,7 @@
           
           <div
             v-for="day in weekDays"
-            :key="day.date"
+            :key="day.date.toISOString()"
             class="space-y-1"
           >
             <div
@@ -186,7 +186,7 @@
         <!-- Calendar days -->
         <div
           v-for="day in monthDays"
-          :key="day.date"
+          :key="day.date.toISOString()"
           :class="[
             'min-h-[100px] p-1 border border-gray-100 hover:bg-gray-50 cursor-pointer',
             day.isCurrentMonth ? 'bg-white' : 'bg-gray-50',
@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfMonth, isSameMonth, isToday, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, isSameDay, parseISO } from 'date-fns'
 import {
   ChevronLeftIcon,

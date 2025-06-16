@@ -10,7 +10,6 @@
       :loading="loading"
       @new-appointment="openNewAppointmentModal"
       @edit-appointment="openEditAppointmentModal"
-      @date-change="handleDateChange"
     />
     
     <!-- New/Edit Appointment Modal -->
@@ -286,7 +285,6 @@ const saveAppointment = async () => {
     // Calculate duration and end time
     const selectedServices = services.value.filter(s => appointmentForm.service_ids.includes(s.id))
     const totalDuration = selectedServices.reduce((sum, service) => sum + service.duration_minutes, 0)
-    const totalPrice = selectedServices.reduce((sum, service) => sum + service.price, 0)
     
     const startDateTime = new Date(`${appointmentForm.date}T${appointmentForm.time}`)
     const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000)
@@ -437,10 +435,6 @@ const fetchServices = async () => {
   } catch (error: any) {
     console.error('Error fetching services:', error)
   }
-}
-
-const handleDateChange = (date: Date) => {
-  // Handle date change if needed
 }
 
 onMounted(async () => {

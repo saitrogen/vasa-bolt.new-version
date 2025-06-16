@@ -2,8 +2,9 @@ import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'vue-router'
 import { useToast } from './useToast'
+import type { User } from '@supabase/supabase-js'
 
-const user = ref(null)
+const user = ref<User | null>(null)
 const loading = ref(false)
 
 export function useAuth() {
@@ -70,7 +71,7 @@ export function useAuth() {
     const { data: { session } } = await supabase.auth.getSession()
     user.value = session?.user || null
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((_, session) => {
       user.value = session?.user || null
     })
   }

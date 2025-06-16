@@ -14,7 +14,7 @@
           <button
             v-for="type in reportTypes"
             :key="type.value"
-            @click="selectedReportType = type.value"
+            @click="selectedReportType = type.value as 'appointments' | 'manual' | 'expenses'"
             :class="[
               'px-4 py-2 rounded-md text-sm font-medium transition-colors',
               selectedReportType === type.value
@@ -192,7 +192,7 @@
                   {{ item.barber?.name }}
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-900">
-                  {{ item.services?.map(s => s.service?.name).join(', ') }}
+                  {{ item.services?.map((s: any) => s.service?.name).join(', ') }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   ${{ (item.total_amount || 0).toFixed(2) }}
@@ -321,7 +321,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
-import type { Appointment, DailyCollection, Expense, Barber } from '../types'
+import type { Barber } from '../types'
 
 const { addToast } = useToast()
 
