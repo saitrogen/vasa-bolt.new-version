@@ -6,15 +6,19 @@
     ]"
   >
     <div class="p-6">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-          <span class="text-white font-bold text-lg">VS</span>
+      <div class="flex items-center justify-between w-full"> <!-- Outer flex for space-between -->
+        <!-- Group for logo and title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-lg">VS</span>
+          </div>
+          <div v-show="!props.isCollapsed">
+            <h1 class="text-xl font-bold text-gray-900">VASA SALOON</h1>
+            <p class="text-sm text-gray-500">Management System</p>
+          </div>
         </div>
-        <div v-show="!props.isCollapsed">
-          <h1 class="text-xl font-bold text-gray-900">VASA SALOON</h1>
-          <p class="text-sm text-gray-500">Management System</p>
-        </div>
-        <button @click="$emit('toggle-sidebar')" class="ml-auto p-2 focus:outline-none">
+        <!-- Toggle button -->
+        <button @click="$emit('toggle-sidebar')" class="p-2 focus:outline-none">
           <span v-show="!props.isCollapsed">&lt;</span>
           <span v-show="props.isCollapsed">&gt;</span>
         </button>

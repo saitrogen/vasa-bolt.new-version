@@ -5,7 +5,11 @@
     </div>
     
     <div v-else class="flex min-h-screen bg-gray-50">
-      <Sidebar :isCollapsed="isCollapsed" @toggle-sidebar="toggleSidebar" />
+      <Sidebar
+        :isCollapsed="isCollapsed"
+        @toggle-sidebar="toggleSidebar"
+        class="fixed top-0 left-0 h-screen z-10"
+      />
       
       <main :class="['flex-1 overflow-auto transition-all duration-300', mainContentMargin]">
         <div class="p-6">
