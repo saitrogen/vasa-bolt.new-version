@@ -32,7 +32,8 @@
                 </div>
               </div>
               <div class="flex-1">
-                <h3 class="text-lg font-medium text-gray-900">
+                <h3 class="text-lg font-medium text-gray-900 cursor-pointer hover:underline"
+                  @click="goToProfile(barber.id)">
                   {{ barber.name }}
                 </h3>
                 <div class="mt-1 space-y-1">
@@ -361,8 +362,10 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
 import Modal from '../components/Modal.vue'
 import type { Barber, BarberSchedule } from '../types'
+import { useRouter } from 'vue-router'
 
 const { addToast } = useToast()
+const router = useRouter()
 
 const barbers = ref<Barber[]>([])
 const schedules = ref<BarberSchedule[]>([])
@@ -692,6 +695,10 @@ const fetchSchedules = async () => {
   } catch (error: any) {
     console.error('Error fetching schedules:', error)
   }
+}
+
+const goToProfile = (id: string) => {
+  router.push({ name: 'BarberProfile', params: { id } })
 }
 
 onMounted(async () => {

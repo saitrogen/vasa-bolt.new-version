@@ -9,6 +9,7 @@ import Barbers from '../views/Barbers.vue'
 import Expenses from '../views/Expenses.vue'
 import DailyCollections from '../views/DailyCollections.vue'
 import Reports from '../views/Reports.vue'
+import BarberProfile from '../views/BarberProfile.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -65,6 +66,12 @@ const router = createRouter({
       path: "/reports",
       name: "Reports",
       component: Reports,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/barbers/:id",
+      name: "BarberProfile",
+      component: BarberProfile,
       meta: { requiresAuth: true },
     },
   ],
