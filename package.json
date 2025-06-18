@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://saitrogen.github.io/vasa-bolt.new-version/",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
@@ -15,6 +14,8 @@
     "@heroicons/vue": "^2.0.18",
     "@supabase/supabase-js": "^2.45.4",
     "date-fns": "^3.6.0",
+    "lucide-vue-next": "^0.517.0",
+    "shadcn-vue": "^2.2.0",
     "vue": "^3.4.38",
     "vue-cal": "^4.9.0",
     "vue-router": "^4.4.5"
