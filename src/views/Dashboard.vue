@@ -8,59 +8,51 @@
     </div>
     
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <CalendarDaysIcon class="h-8 w-8 text-primary-600" />
-            </div>
-            <div class="ml-4">
-              <div class="text-sm font-medium text-gray-500">Today's Appointments</div>
-              <div class="text-2xl font-bold text-gray-900">{{ todayStats.appointments }}</div>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <CalendarDaysIcon class="h-8 w-8 text-primary-600" />
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-500">Today's Appointments</div>
+            <div class="text-2xl font-bold text-gray-900">{{ todayStats.appointments }}</div>
           </div>
         </div>
       </div>
       
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <CurrencyDollarIcon class="h-8 w-8 text-success-600" />
-            </div>
-            <div class="ml-4">
-              <div class="text-sm font-medium text-gray-500">Today's Revenue</div>
-              <div class="text-2xl font-bold text-gray-900">${{ todayStats.revenue }}</div>
-            </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <CurrencyDollarIcon class="h-8 w-8 text-success-600" />
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-500">Today's Revenue</div>
+            <div class="text-2xl font-bold text-gray-900">${{ todayStats.revenue }}</div>
           </div>
         </div>
       </div>
       
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <UserGroupIcon class="h-8 w-8 text-secondary-600" />
-            </div>
-            <div class="ml-4">
-              <div class="text-sm font-medium text-gray-500">Total Clients</div>
-              <div class="text-2xl font-bold text-gray-900">{{ totalStats.clients }}</div>
-            </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <UserGroupIcon class="h-8 w-8 text-secondary-600" />
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-500">Total Clients</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalStats.clients }}</div>
           </div>
         </div>
       </div>
       
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <UsersIcon class="h-8 w-8 text-accent-600" />
-            </div>
-            <div class="ml-4">
-              <div class="text-sm font-medium text-gray-500">Active Barbers</div>
-              <div class="text-2xl font-bold text-gray-900">{{ totalStats.barbers }}</div>
-            </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <UsersIcon class="h-8 w-8 text-accent-600" />
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-500">Active Barbers</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalStats.barbers }}</div>
           </div>
         </div>
       </div>
@@ -68,44 +60,42 @@
     
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
         </div>
-        <div class="card-content">
-          <div class="grid grid-cols-2 gap-4">
-            <router-link
-              to="/appointments"
-              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <CalendarDaysIcon class="h-6 w-6 text-primary-600 mr-3" />
-              <span class="font-medium">New Appointment</span>
-            </router-link>
-            
-            <router-link
-              to="/clients"
-              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <UserGroupIcon class="h-6 w-6 text-secondary-600 mr-3" />
-              <span class="font-medium">Add Client</span>
-            </router-link>
-            
-            <router-link
-              to="/expenses"
-              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <CurrencyDollarIcon class="h-6 w-6 text-success-600 mr-3" />
-              <span class="font-medium">Log Expense</span>
-            </router-link>
-            
-            <router-link
-              to="/reports"
-              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <ChartBarIcon class="h-6 w-6 text-accent-600 mr-3" />
-              <span class="font-medium">View Reports</span>
-            </router-link>
-          </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <router-link
+            to="/appointments"
+            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-primary-50 hover:border-primary-200 transition-all group"
+          >
+            <CalendarDaysIcon class="h-6 w-6 text-primary-600 mr-3 group-hover:scale-110 transition-transform" />
+            <span class="font-medium text-gray-700 group-hover:text-primary-700">New Appointment</span>
+          </router-link>
+          
+          <router-link
+            to="/clients"
+            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-secondary-50 hover:border-secondary-200 transition-all group"
+          >
+            <UserGroupIcon class="h-6 w-6 text-secondary-600 mr-3 group-hover:scale-110 transition-transform" />
+            <span class="font-medium text-gray-700 group-hover:text-secondary-700">Add Client</span>
+          </router-link>
+          
+          <router-link
+            to="/expenses"
+            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-success-50 hover:border-success-200 transition-all group"
+          >
+            <CurrencyDollarIcon class="h-6 w-6 text-success-600 mr-3 group-hover:scale-110 transition-transform" />
+            <span class="font-medium text-gray-700 group-hover:text-success-700">Log Expense</span>
+          </router-link>
+          
+          <router-link
+            to="/reports"
+            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-accent-50 hover:border-accent-200 transition-all group"
+          >
+            <ChartBarIcon class="h-6 w-6 text-accent-600 mr-3 group-hover:scale-110 transition-transform" />
+            <span class="font-medium text-gray-700 group-hover:text-accent-700">View Reports</span>
+          </router-link>
         </div>
       </div>
       

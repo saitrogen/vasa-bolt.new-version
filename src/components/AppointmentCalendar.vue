@@ -1,19 +1,19 @@
 <template>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-    <div class="p-4 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
+    <div class="p-6 border-b border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+        <div class="flex items-center space-x-6">
           <h2 class="text-lg font-semibold text-gray-900">Appointments</h2>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center bg-gray-100 p-1 rounded-lg">
             <button
               v-for="view in views"
               :key="view.value"
               @click="currentView = view.value as 'day' | 'week' | 'month'"
               :class="[
-                'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                'px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
                 currentView === view.value
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               ]"
             >
               {{ view.label }}
@@ -21,10 +21,10 @@
           </div>
         </div>
         
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-3">
           <button
             @click="previousPeriod"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+            class="p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
           >
             <ChevronLeftIcon class="w-5 h-5" />
           </button>
@@ -35,21 +35,21 @@
           
           <button
             @click="nextPeriod"
-            class="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+            class="p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
           >
             <ChevronRightIcon class="w-5 h-5" />
           </button>
           
           <button
             @click="goToToday"
-            class="ml-4 btn btn-outline"
+            class="ml-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
             Today
           </button>
           
           <button
             @click="$emit('new-appointment')"
-            class="btn btn-primary"
+            class="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors"
           >
             <PlusIcon class="w-4 h-4 mr-2" />
             New Appointment
@@ -58,18 +58,18 @@
       </div>
     </div>
     
-    <div class="p-4">
+    <div class="p-6">
       <!-- Week View -->
-      <div v-if="currentView === 'week'" class="space-y-4">
+      <div v-if="currentView === 'week'" class="space-y-6">
         <!-- Time slots header -->
-        <div class="grid grid-cols-8 gap-4">
+        <div class="grid grid-cols-8 gap-6">
           <div class="text-sm font-medium text-gray-500">Time</div>
           <div
             v-for="day in weekDays"
             :key="day.date.toISOString()"
             class="text-center"
           >
-            <div class="text-sm font-medium text-gray-900">
+            <div class="text-sm font-medium text-gray-700">
               {{ format(day.date, 'EEE') }}
             </div>
             <div class="text-2xl font-bold text-gray-900 mt-1">
@@ -79,12 +79,12 @@
         </div>
         
         <!-- Time slots grid -->
-        <div class="grid grid-cols-8 gap-4 overflow-y-auto max-h-96">
-          <div class="space-y-4">
+        <div class="grid grid-cols-8 gap-6 overflow-y-auto max-h-[calc(100vh-24rem)]">
+          <div class="space-y-6">
             <div
               v-for="hour in businessHours"
               :key="hour"
-              class="h-16 flex items-center text-xs text-gray-500 border-r border-gray-100 pr-2"
+              class="h-20 flex items-center text-sm text-gray-600 border-r border-gray-100 pr-3 font-medium"
             >
               {{ formatTime(hour) }}
             </div>
@@ -98,7 +98,7 @@
             <div
               v-for="hour in businessHours"
               :key="`${day.date}-${hour}`"
-              class="h-16 border border-gray-100 rounded-md p-1 hover:bg-gray-50 cursor-pointer relative"
+              class="h-20 border border-gray-100 rounded-md p-1 hover:bg-gray-50 cursor-pointer relative"
               @click="createAppointment(day.date, hour)"
             >
               <!-- Appointments for this time slot -->

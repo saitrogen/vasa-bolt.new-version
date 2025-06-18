@@ -1,44 +1,38 @@
 <template>
-  <div id="app">
-    <div v-if="!isAuthenticated" class="min-h-screen">
-      <router-view />
-    </div>
-    
-    <div v-else class="flex min-h-screen bg-gray-50">
-      <Sidebar
-        :isCollapsed="isCollapsed"
-        @toggle-sidebar="toggleSidebar"
-        class="fixed top-0 left-0 h-screen z-10"
-      />
-      
-      <main :class="['flex-1 overflow-auto transition-all duration-300', mainContentMargin]">
-        <div class="p-6">
-          <router-view />
-        </div>
-      </main>
-    </div>
-    
+  <div class="flex h-screen bg-gray-100">
+    <Sidebar
+      :is-collapsed="isSidebarCollapsed"
+      @toggle-sidebar="toggleSidebar"
+      class="fixed left-0 top-0 h-full z-10"
+    />
+    <main 
+      :class="[
+        'flex-1 overflow-auto transition-all duration-300 min-h-screen',
+        isSidebarCollapsed ? 'ml-20' : 'ml-64',
+        'p-6'
+      ]"
+    >
+      <div class="max-w-[1600px] mx-auto">
+        <router-view />
+      </div>
+    </main>
     <Toast />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, } from 'vue'
 import { useAuth } from './composables/useAuth'
 import Sidebar from './components/Sidebar.vue'
 import Toast from './components/Toast.vue'
 
-const { isAuthenticated, initializeAuth } = useAuth()
+const {  initializeAuth } = useAuth()
 
-const isCollapsed = ref(false);
+const isSidebarCollapsed = ref(false)
 
 const toggleSidebar = () => {
-  isCollapsed.value = !isCollapsed.value;
-};
-
-const mainContentMargin = computed(() => {
-  return isCollapsed.value ? 'ml-20' : 'ml-64';
-});
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
 
 onMounted(() => {
   initializeAuth()

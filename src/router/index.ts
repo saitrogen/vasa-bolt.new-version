@@ -14,61 +14,61 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/login',
-      name: 'Login',
+      path: "/login",
+      name: "Login",
       component: Login,
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false },
     },
     {
-      path: '/',
-      name: 'Dashboard',
+      path: "/",
+      name: "Dashboard",
       component: Dashboard,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/appointments',
-      name: 'Appointments',
+      path: "/appointments",
+      name: "Appointments",
       component: Appointments,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/clients',
-      name: 'Clients',
+      path: "/clients",
+      name: "Clients",
       component: Clients,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/services',
-      name: 'Services',
+      path: "/services",
+      name: "Services",
       component: Services,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/barbers',
-      name: 'Barbers',
+      path: "/barbers",
+      name: "Barbers",
       component: Barbers,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/expenses',
-      name: 'Expenses',
+      path: "/expenses",
+      name: "Expenses",
       component: Expenses,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/daily-collections',
-      name: 'DailyCollections',
+      path: "/daily-collections",
+      name: "DailyCollections",
       component: DailyCollections,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/reports',
-      name: 'Reports',
+      path: "/reports",
+      name: "Reports",
       component: Reports,
-      meta: { requiresAuth: true }
-    }
-  ]
-})
+      meta: { requiresAuth: true },
+    },
+  ],
+});
 
 router.beforeEach(async (to, _from, next) => {
   const { data: { session } } = await supabase.auth.getSession()

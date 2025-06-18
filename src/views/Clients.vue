@@ -12,41 +12,41 @@
     </div>
     
     <!-- Search and Filter -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
       <div class="flex items-center space-x-4">
         <div class="flex-1">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search clients by name, phone, or email..."
-            class="input"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
           />
         </div>
-        <div class="text-sm text-gray-500">
+        <div class="text-sm font-medium text-gray-600">
           {{ filteredClients.length }} client{{ filteredClients.length !== 1 ? 's' : '' }}
         </div>
       </div>
     </div>
     
     <!-- Clients Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Name
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Contact
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Appointments
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Last Visit
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -55,45 +55,45 @@
             <tr
               v-for="client in paginatedClients"
               :key="client.id"
-              class="hover:bg-gray-50"
+              class="hover:bg-gray-50 transition-colors"
             >
-              <td class="px-6 py-4 whitespace-nowrap">
+              <td class="px-6 py-5 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10">
-                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span class="text-sm font-medium text-gray-700">
+                    <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                      <span class="text-sm font-semibold text-primary-700">
                         {{ getInitials(client.name) }}
                       </span>
                     </div>
                   </div>
                   <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ client.name }}</div>
-                    <div v-if="client.notes" class="text-sm text-gray-500 truncate max-w-xs">
+                    <div class="text-sm font-semibold text-gray-900">{{ client.name }}</div>
+                    <div v-if="client.notes" class="text-sm text-gray-500 truncate max-w-xs mt-0.5">
                       {{ client.notes }}
                     </div>
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ client.phone_number }}</div>
-                <div class="text-sm text-gray-500">{{ client.email }}</div>
+              <td class="px-6 py-5 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ client.phone_number }}</div>
+                <div class="text-sm text-gray-500 mt-0.5">{{ client.email }}</div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">
+              <td class="px-6 py-5 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">
                   {{ getClientAppointmentCount(client.id) }} appointments
                 </div>
-                <div class="text-sm text-gray-500">
+                <div class="text-sm text-gray-500 mt-0.5">
                   {{ getClientUpcomingCount(client.id) }} upcoming
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
                 {{ getLastVisitDate(client.id) }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex items-center justify-end space-x-2">
+              <td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-3">
                   <button
                     @click="viewClientHistory(client)"
-                    class="text-primary-600 hover:text-primary-900"
+                    class="text-primary-600 hover:text-primary-900 font-semibold transition-colors"
                   >
                     History
                   </button>
