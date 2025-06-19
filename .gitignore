@@ -26,3 +26,4 @@ dist-ssr
 .env.production
 userinput.py
 .cursor/rules/rules.mdc
+tsconfig.app.tsbuildinfo
