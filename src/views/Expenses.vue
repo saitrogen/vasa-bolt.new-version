@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Expenses</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Expenses</h1>
       <button
         @click="openNewExpenseModal"
         class="btn btn-primary"
@@ -12,10 +12,10 @@
     </div>
     
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Category
           </label>
           <select v-model="filters.category" class="select">
@@ -27,7 +27,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             From Date
           </label>
           <input
@@ -38,7 +38,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             To Date
           </label>
           <input
@@ -59,66 +59,66 @@
       </div>
       
       <div class="mt-4 flex items-center justify-between">
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-gray-600 dark:text-gray-300">
           {{ filteredExpenses.length }} expense{{ filteredExpenses.length !== 1 ? 's' : '' }}
         </div>
-        <div class="text-lg font-semibold text-gray-900">
+        <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Total: ${{ totalAmount.toFixed(2) }}
         </div>
       </div>
     </div>
     
     <!-- Expenses Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Date
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Category
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Description
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Amount
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Receipt
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr
               v-for="expense in paginatedExpenses"
               :key="expense.id"
-              class="hover:bg-gray-50"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                 {{ format(parseISO(expense.expense_date), 'MMM d, yyyy') }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span class="badge badge-default">
                   {{ expense.category }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
+              <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                 <div class="max-w-xs truncate">{{ expense.description }}</div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                 ${{ expense.amount.toFixed(2) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div v-if="expense.bill_image_url" class="flex items-center">
                   <button
                     @click="viewReceipt(expense.bill_image_url)"
-                    class="text-primary-600 hover:text-primary-900"
+                    class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                   >
                     <DocumentIcon class="w-5 h-5" />
                   </button>
@@ -129,13 +129,13 @@
                 <div class="flex items-center justify-end space-x-2">
                   <button
                     @click="editExpense(expense)"
-                    class="text-secondary-600 hover:text-secondary-900"
+                    class="text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-300"
                   >
                     Edit
                   </button>
                   <button
                     @click="deleteExpense(expense)"
-                    class="text-error-600 hover:text-error-900"
+                    class="text-error-600 hover:text-error-900 dark:text-error-400 dark:hover:text-error-300"
                   >
                     Delete
                   </button>
@@ -147,26 +147,26 @@
       </div>
       
       <!-- Pagination -->
-      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+      <div class="card-content flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
         <div class="flex-1 flex justify-between sm:hidden">
           <button
             @click="currentPage--"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-outline"
           >
             Previous
           </button>
           <button
             @click="currentPage++"
             :disabled="currentPage >= totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-outline ml-3"
           >
             Next
           </button>
         </div>
         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
-            <p class="text-sm text-gray-700">
+            <p class="text-sm text-gray-700 dark:text-gray-300">
               Showing
               <span class="font-medium">{{ startIndex + 1 }}</span>
               to
@@ -181,7 +181,7 @@
               <button
                 @click="currentPage--"
                 :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <ChevronLeftIcon class="h-5 w-5" />
               </button>
@@ -192,8 +192,8 @@
                 :class="[
                   'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
                   page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600 dark:bg-primary-900 dark:text-primary-200'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
                 ]"
               >
                 {{ page }}
@@ -201,7 +201,7 @@
               <button
                 @click="currentPage++"
                 :disabled="currentPage >= totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <ChevronRightIcon class="h-5 w-5" />
               </button>

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Services</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
       <button
         @click="openNewServiceModal"
         class="btn btn-primary"
@@ -24,13 +24,13 @@
         <div class="card-content">
           <div class="flex items-start justify-between">
             <div class="flex-1">
-              <h3 class="text-lg font-medium text-gray-900 mb-2">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 {{ service.name }}
               </h3>
-              <p v-if="service.description" class="text-sm text-gray-600 mb-3">
+              <p v-if="service.description" class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 {{ service.description }}
               </p>
-              <div class="flex items-center space-x-4 text-sm text-gray-500">
+              <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                 <div class="flex items-center">
                   <CurrencyDollarIcon class="w-4 h-4 mr-1" />
                   ${{ service.price }}
@@ -44,10 +44,10 @@
             <div class="flex items-center space-x-2">
               <div :class="[
                 'w-3 h-3 rounded-full',
-                service.is_active ? 'bg-success-500' : 'bg-gray-300'
+                service.is_active ? 'bg-success-500' : 'bg-gray-300 dark:bg-gray-600'
               ]"></div>
               <Menu as="div" class="relative">
-                <MenuButton class="p-1 text-gray-400 hover:text-gray-600">
+                <MenuButton class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                   <EllipsisVerticalIcon class="w-5 h-5" />
                 </MenuButton>
                 <transition
@@ -58,13 +58,13 @@
                   leave-from-class="transform scale-100 opacity-100"
                   leave-to-class="transform scale-95 opacity-0"
                 >
-                  <MenuItems class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                  <MenuItems class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                     <div class="py-1">
                       <MenuItem v-slot="{ active }">
                         <button
                           @click="editService(service)"
                           :class="[
-                            active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                            active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
                             'block w-full text-left px-4 py-2 text-sm'
                           ]"
                         >
@@ -75,7 +75,7 @@
                         <button
                           @click="toggleServiceStatus(service)"
                           :class="[
-                            active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                            active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
                             'block w-full text-left px-4 py-2 text-sm'
                           ]"
                         >
@@ -94,8 +94,8 @@
       <div v-if="services.length === 0 && !loading" class="col-span-full">
         <div class="text-center py-12">
           <WrenchScrewdriverIcon class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No services</h3>
-          <p class="mt-1 text-sm text-gray-500">Get started by creating your first service.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No services</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating your first service.</p>
           <div class="mt-6">
             <button
               @click="openNewServiceModal"

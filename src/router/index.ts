@@ -1,15 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '../lib/supabase'
-import Login from '../views/Login.vue'
-import Dashboard from '../views/Dashboard.vue'
-import Appointments from '../views/Appointments.vue'
-import Clients from '../views/Clients.vue'
-import Services from '../views/Services.vue'
-import Barbers from '../views/Barbers.vue'
-import Expenses from '../views/Expenses.vue'
-import DailyCollections from '../views/DailyCollections.vue'
-import Reports from '../views/Reports.vue'
-import BarberProfile from '../views/BarberProfile.vue'
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,61 +8,61 @@ const router = createRouter({
     {
       path: "/login",
       name: "Login",
-      component: Login,
+      component: () => import('../views/Login.vue'),
       meta: { requiresAuth: false },
     },
     {
       path: "/",
       name: "Dashboard",
-      component: Dashboard,
+      component: () => import('../views/Dashboard.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/appointments",
       name: "Appointments",
-      component: Appointments,
+      component: () => import('../views/Appointments.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/clients",
       name: "Clients",
-      component: Clients,
+      component: () => import('../views/Clients.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/services",
       name: "Services",
-      component: Services,
+      component: () => import('../views/Services.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/barbers",
       name: "Barbers",
-      component: Barbers,
+      component: () => import('../views/Barbers.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/expenses",
       name: "Expenses",
-      component: Expenses,
+      component: () => import('../views/Expenses.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/daily-collections",
       name: "DailyCollections",
-      component: DailyCollections,
+      component: () => import('../views/DailyCollections.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/reports",
       name: "Reports",
-      component: Reports,
+      component: () => import('../views/Reports.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: "/barbers/:id",
       name: "BarberProfile",
-      component: BarberProfile,
+      component: () => import('../views/BarberProfile.vue'),
       meta: { requiresAuth: true },
     },
   ],

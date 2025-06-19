@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Barbers</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Barbers</h1>
       <button
         @click="openNewBarberModal"
         class="btn btn-primary"
@@ -25,22 +25,22 @@
           <div class="flex items-start justify-between">
             <div class="flex items-center space-x-4">
               <div class="flex-shrink-0">
-                <div class="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span class="text-xl font-medium text-gray-700">
+                <div class="h-16 w-16 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                  <span class="text-xl font-medium text-gray-700 dark:text-gray-200">
                     {{ getInitials(barber.name) }}
                   </span>
                 </div>
               </div>
               <div class="flex-1">
-                <h3 class="text-lg font-medium text-gray-900 cursor-pointer hover:underline"
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:underline"
                   @click="goToProfile(barber.id)">
                   {{ barber.name }}
                 </h3>
                 <div class="mt-1 space-y-1">
-                  <div v-if="barber.phone_number_work" class="text-sm text-gray-600">
+                  <div v-if="barber.phone_number_work" class="text-sm text-gray-600 dark:text-gray-400">
                     Work: {{ barber.phone_number_work }}
                   </div>
-                  <div v-if="barber.email" class="text-sm text-gray-600">
+                  <div v-if="barber.email" class="text-sm text-gray-600 dark:text-gray-400">
                     {{ barber.email }}
                   </div>
                 </div>
@@ -48,8 +48,8 @@
                   <div :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                     barber.is_active
-                      ? 'bg-success-100 text-success-800'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'badge-success'
+                      : 'badge-default'
                   ]">
                     {{ barber.is_active ? 'Active' : 'Inactive' }}
                   </div>
@@ -57,7 +57,7 @@
               </div>
             </div>
             <Menu as="div" class="relative">
-              <MenuButton class="p-1 text-gray-400 hover:text-gray-600">
+              <MenuButton class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <EllipsisVerticalIcon class="w-5 h-5" />
               </MenuButton>
               <transition
@@ -68,13 +68,13 @@
                 leave-from-class="transform scale-100 opacity-100"
                 leave-to-class="transform scale-95 opacity-0"
               >
-                <MenuItems class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                <MenuItems class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                   <div class="py-1">
                     <MenuItem v-slot="{ active }">
                       <button
                         @click="editBarber(barber)"
                         :class="[
-                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
                           'block w-full text-left px-4 py-2 text-sm'
                         ]"
                       >
@@ -85,7 +85,7 @@
                       <button
                         @click="manageSchedule(barber)"
                         :class="[
-                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
                           'block w-full text-left px-4 py-2 text-sm'
                         ]"
                       >
@@ -96,7 +96,7 @@
                       <button
                         @click="toggleBarberStatus(barber)"
                         :class="[
-                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
                           'block w-full text-left px-4 py-2 text-sm'
                         ]"
                       >
@@ -114,8 +114,8 @@
       <div v-if="barbers.length === 0 && !loading" class="col-span-full">
         <div class="text-center py-12">
           <UsersIcon class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No barbers</h3>
-          <p class="mt-1 text-sm text-gray-500">Get started by adding your first barber.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No barbers</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by adding your first barber.</p>
           <div class="mt-6">
             <button
               @click="openNewBarberModal"

@@ -1,58 +1,58 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <div class="text-sm text-gray-500">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+      <div class="text-sm text-gray-500 dark:text-gray-400">
         {{ format(new Date(), 'EEEE, MMMM d, yyyy') }}
       </div>
     </div>
     
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+      <div class="card p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <CalendarDaysIcon class="h-8 w-8 text-primary-600" />
           </div>
           <div class="ml-4">
-            <div class="text-sm font-medium text-gray-500">Today's Appointments</div>
-            <div class="text-2xl font-bold text-gray-900">{{ todayStats.appointments }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Today's Appointments</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ todayStats.appointments }}</div>
           </div>
         </div>
       </div>
       
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+      <div class="card p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <CurrencyDollarIcon class="h-8 w-8 text-success-600" />
           </div>
           <div class="ml-4">
-            <div class="text-sm font-medium text-gray-500">Today's Revenue</div>
-            <div class="text-2xl font-bold text-gray-900">${{ todayStats.revenue }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Today's Revenue</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ todayStats.revenue }}</div>
           </div>
         </div>
       </div>
       
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+      <div class="card p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <UserGroupIcon class="h-8 w-8 text-secondary-600" />
           </div>
           <div class="ml-4">
-            <div class="text-sm font-medium text-gray-500">Total Clients</div>
-            <div class="text-2xl font-bold text-gray-900">{{ totalStats.clients }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Clients</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ totalStats.clients }}</div>
           </div>
         </div>
       </div>
       
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+      <div class="card p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <UsersIcon class="h-8 w-8 text-accent-600" />
           </div>
           <div class="ml-4">
-            <div class="text-sm font-medium text-gray-500">Active Barbers</div>
-            <div class="text-2xl font-bold text-gray-900">{{ totalStats.barbers }}</div>
+            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Barbers</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ totalStats.barbers }}</div>
           </div>
         </div>
       </div>
@@ -60,63 +60,63 @@
     
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <div class="card p-6">
         <div class="mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Quick Actions</h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <router-link
             to="/appointments"
-            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-primary-50 hover:border-primary-200 transition-all group"
+            class="flex items-center p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900 hover:border-primary-200 dark:hover:border-primary-500 transition-all group"
           >
             <CalendarDaysIcon class="h-6 w-6 text-primary-600 mr-3 group-hover:scale-110 transition-transform" />
-            <span class="font-medium text-gray-700 group-hover:text-primary-700">New Appointment</span>
+            <span class="font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-700 dark:group-hover:text-primary-300">New Appointment</span>
           </router-link>
           
           <router-link
             to="/clients"
-            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-secondary-50 hover:border-secondary-200 transition-all group"
+            class="flex items-center p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-900 hover:border-secondary-200 dark:hover:border-secondary-500 transition-all group"
           >
             <UserGroupIcon class="h-6 w-6 text-secondary-600 mr-3 group-hover:scale-110 transition-transform" />
-            <span class="font-medium text-gray-700 group-hover:text-secondary-700">Add Client</span>
+            <span class="font-medium text-gray-700 dark:text-gray-200 group-hover:text-secondary-700 dark:group-hover:text-secondary-300">Add Client</span>
           </router-link>
           
           <router-link
             to="/expenses"
-            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-success-50 hover:border-success-200 transition-all group"
+            class="flex items-center p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-success-50 dark:hover:bg-success-900 hover:border-success-200 dark:hover:border-success-500 transition-all group"
           >
             <CurrencyDollarIcon class="h-6 w-6 text-success-600 mr-3 group-hover:scale-110 transition-transform" />
-            <span class="font-medium text-gray-700 group-hover:text-success-700">Log Expense</span>
+            <span class="font-medium text-gray-700 dark:text-gray-200 group-hover:text-success-700 dark:group-hover:text-success-300">Log Expense</span>
           </router-link>
           
           <router-link
             to="/reports"
-            class="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-accent-50 hover:border-accent-200 transition-all group"
+            class="flex items-center p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-900 hover:border-accent-200 dark:hover:border-accent-500 transition-all group"
           >
             <ChartBarIcon class="h-6 w-6 text-accent-600 mr-3 group-hover:scale-110 transition-transform" />
-            <span class="font-medium text-gray-700 group-hover:text-accent-700">View Reports</span>
+            <span class="font-medium text-gray-700 dark:text-gray-200 group-hover:text-accent-700 dark:group-hover:text-accent-300">View Reports</span>
           </router-link>
         </div>
       </div>
       
       <!-- Today's Appointments -->
       <div class="card">
-        <div class="card-header">
-          <h3 class="text-lg font-medium text-gray-900">Today's Appointments</h3>
+        <div class="card-header p-6">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Today's Appointments</h3>
         </div>
         <div class="card-content">
           <div class="space-y-3">
             <div
               v-for="appointment in todayAppointments.slice(0, 5)"
               :key="appointment.id"
-              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
             >
               <div>
-                <div class="font-medium text-gray-900">{{ appointment.client?.name }}</div>
-                <div class="text-sm text-gray-500">{{ appointment.barber?.name }}</div>
+                <div class="font-medium text-gray-900 dark:text-gray-100">{{ appointment.client?.name }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ appointment.barber?.name }}</div>
               </div>
               <div class="text-right">
-                <div class="text-sm font-medium text-gray-900">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {{ format(parseISO(appointment.start_time), 'h:mm a') }}
                 </div>
                 <div :class="['badge', getStatusBadgeClass(appointment.status)]">
@@ -125,12 +125,12 @@
               </div>
             </div>
             
-            <div v-if="todayAppointments.length === 0" class="text-center py-4 text-gray-500">
+            <div v-if="todayAppointments.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
               No appointments scheduled for today
             </div>
             
             <div v-if="todayAppointments.length > 5" class="text-center">
-              <router-link to="/appointments" class="text-primary-600 hover:text-primary-700 font-medium">
+              <router-link to="/appointments" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
                 View all {{ todayAppointments.length }} appointments
               </router-link>
             </div>

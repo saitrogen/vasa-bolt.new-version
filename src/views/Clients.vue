@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Clients</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Clients</h1>
       <button
         @click="openNewClientModal"
         class="btn btn-primary"
@@ -12,94 +12,94 @@
     </div>
     
     <!-- Search and Filter -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <div class="card p-4">
       <div class="flex items-center space-x-4">
         <div class="flex-1">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search clients by name, phone, or email..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+            class="input w-full"
           />
         </div>
-        <div class="text-sm font-medium text-gray-600">
+        <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
           {{ filteredClients.length }} client{{ filteredClients.length !== 1 ? 's' : '' }}
         </div>
       </div>
     </div>
     
     <!-- Clients Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Name
               </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Contact
               </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Appointments
               </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Last Visit
               </th>
-              <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr
               v-for="client in paginatedClients"
               :key="client.id"
-              class="hover:bg-gray-50 transition-colors"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
               <td class="px-6 py-5 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10">
-                    <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                      <span class="text-sm font-semibold text-primary-700">
+                    <div class="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                      <span class="text-sm font-semibold text-primary-700 dark:text-primary-200">
                         {{ getInitials(client.name) }}
                       </span>
                     </div>
                   </div>
                   <div class="ml-4">
-                    <div class="text-sm font-semibold text-gray-900">{{ client.name }}</div>
-                    <div v-if="client.notes" class="text-sm text-gray-500 truncate max-w-xs mt-0.5">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ client.name }}</div>
+                    <div v-if="client.notes" class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs mt-0.5">
                       {{ client.notes }}
                     </div>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-5 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">{{ client.phone_number }}</div>
-                <div class="text-sm text-gray-500 mt-0.5">{{ client.email }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ client.phone_number }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ client.email }}</div>
               </td>
               <td class="px-6 py-5 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {{ getClientAppointmentCount(client.id) }} appointments
                 </div>
-                <div class="text-sm text-gray-500 mt-0.5">
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                   {{ getClientUpcomingCount(client.id) }} upcoming
                 </div>
               </td>
-              <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {{ getLastVisitDate(client.id) }}
               </td>
               <td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end space-x-3">
                   <button
                     @click="viewClientHistory(client)"
-                    class="text-primary-600 hover:text-primary-900 font-semibold transition-colors"
+                    class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-semibold transition-colors"
                   >
                     History
                   </button>
                   <button
                     @click="editClient(client)"
-                    class="text-secondary-600 hover:text-secondary-900"
+                    class="text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-300"
                   >
                     Edit
                   </button>
@@ -111,26 +111,26 @@
       </div>
       
       <!-- Pagination -->
-      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+      <div class="card-content border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div class="flex-1 flex justify-between sm:hidden">
           <button
             @click="currentPage--"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-outline"
           >
             Previous
           </button>
           <button
             @click="currentPage++"
             :disabled="currentPage >= totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-outline ml-3"
           >
             Next
           </button>
         </div>
         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
-            <p class="text-sm text-gray-700">
+            <p class="text-sm text-gray-700 dark:text-gray-300">
               Showing
               <span class="font-medium">{{ startIndex + 1 }}</span>
               to
@@ -145,7 +145,7 @@
               <button
                 @click="currentPage--"
                 :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <ChevronLeftIcon class="h-5 w-5" />
               </button>
@@ -156,8 +156,8 @@
                 :class="[
                   'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
                   page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ? 'z-10 bg-primary-50 dark:bg-primary-900 border-primary-500 text-primary-600 dark:text-primary-200'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 ]"
               >
                 {{ page }}
@@ -165,7 +165,7 @@
               <button
                 @click="currentPage++"
                 :disabled="currentPage >= totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <ChevronRightIcon class="h-5 w-5" />
               </button>

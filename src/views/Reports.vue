@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
     </div>
     
     <!-- Report Type Selector -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div class="card p-4">
       <div class="flex items-center space-x-4">
-        <label class="block text-sm font-medium text-gray-700">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Report Type:
         </label>
         <div class="flex space-x-2">
@@ -18,8 +18,8 @@
             :class="[
               'px-4 py-2 rounded-md text-sm font-medium transition-colors',
               selectedReportType === type.value
-                ? 'bg-primary-100 text-primary-700'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'
             ]"
           >
             {{ type.label }}
@@ -29,10 +29,10 @@
     </div>
     
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div v-if="selectedReportType !== 'expenses'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Barber
           </label>
           <select v-model="filters.barberId" class="select">
@@ -44,7 +44,7 @@
         </div>
         
         <div v-if="selectedReportType === 'expenses'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Category
           </label>
           <select v-model="filters.category" class="select">
@@ -56,7 +56,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             From Date
           </label>
           <input
@@ -67,7 +67,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             To Date
           </label>
           <input
@@ -100,8 +100,8 @@
                 <CurrencyDollarIcon class="h-8 w-8 text-success-600" />
               </div>
               <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500">Total Amount</div>
-                <div class="text-2xl font-bold text-gray-900">${{ totalAmount.toFixed(2) }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ totalAmount.toFixed(2) }}</div>
               </div>
             </div>
           </div>
@@ -114,8 +114,8 @@
                 <CalendarDaysIcon class="h-8 w-8 text-primary-600" />
               </div>
               <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500">Total Appointments</div>
-                <div class="text-2xl font-bold text-gray-900">{{ reportData.length }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Appointments</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ reportData.length }}</div>
               </div>
             </div>
           </div>
@@ -128,8 +128,8 @@
                 <ChartBarIcon class="h-8 w-8 text-secondary-600" />
               </div>
               <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500">Average per {{ selectedReportType === 'appointments' ? 'Appointment' : 'Day' }}</div>
-                <div class="text-2xl font-bold text-gray-900">${{ averageAmount.toFixed(2) }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Average per {{ selectedReportType === 'appointments' ? 'Appointment' : 'Day' }}</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ averageAmount.toFixed(2) }}</div>
               </div>
             </div>
           </div>
@@ -142,8 +142,8 @@
                 <DocumentTextIcon class="h-8 w-8 text-accent-600" />
               </div>
               <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500">Total Expenses</div>
-                <div class="text-2xl font-bold text-gray-900">{{ reportData.length }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ reportData.length }}</div>
               </div>
             </div>
           </div>
@@ -151,50 +151,50 @@
       </div>
       
       <!-- Report Table -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-900">
+      <div class="card overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
             {{ reportTypes.find(t => t.value === selectedReportType)?.label }} Report
           </h3>
         </div>
         
         <div class="overflow-x-auto">
           <!-- Appointments Report -->
-          <table v-if="selectedReportType === 'appointments'" class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table v-if="selectedReportType === 'appointments'" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Date
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Client
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Barber
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Services
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Amount
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ format(parseISO(item.start_time), 'MMM d, yyyy') }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ item.client?.name }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ item.barber?.name }}
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                   {{ item.services?.map((s: any) => s.service?.name).join(', ') }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   ${{ (item.total_amount || 0).toFixed(2) }}
                 </td>
               </tr>
@@ -202,41 +202,41 @@
           </table>
           
           <!-- Manual Collections Report -->
-          <table v-else-if="selectedReportType === 'manual'" class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table v-else-if="selectedReportType === 'manual'" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Date
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Barber
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Amount
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Appointments
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Notes
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ format(parseISO(item.collection_date), 'MMM d, yyyy') }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ item.barber?.name }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   ${{ item.total_amount_manually_entered.toFixed(2) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {{ item.number_of_appointments || 'Not specified' }}
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                   {{ item.notes || 'No notes' }}
                 </td>
               </tr>
@@ -244,43 +244,41 @@
           </table>
           
           <!-- Expenses Report -->
-          <table v-else class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Date
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Category
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Description
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Amount
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Receipt
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ format(parseISO(item.expense_date), 'MMM d, yyyy') }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {{ item.category }}
-                  </span>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  {{ item.category }}
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {{ item.description }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   ${{ item.amount.toFixed(2) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   <div v-if="item.bill_image_url" class="flex items-center">
                     <button
                       @click="viewReceipt(item.bill_image_url)"
@@ -301,8 +299,8 @@
     <!-- Empty State -->
     <div v-else-if="!loading && hasGeneratedReport" class="text-center py-12">
       <ChartBarIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No data found</h3>
-      <p class="mt-1 text-sm text-gray-500">
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No data found</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         No records match your selected criteria. Try adjusting your filters.
       </p>
     </div>
