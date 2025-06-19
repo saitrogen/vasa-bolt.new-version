@@ -1,145 +1,89 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Expenses</h1>
-      <button
-        @click="openNewExpenseModal"
-        class="btn btn-primary"
-      >
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Add Expense
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Expenses</h1>
+      <button @click="openNewExpenseModal" class="btn btn-primary">
+        <PlusIcon class="w-4 h-4 md:mr-2" />
+        <span class="hidden md:inline">Add Expense</span>
       </button>
     </div>
     
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Category
-          </label>
-          <select v-model="filters.category" class="select">
-            <option value="">All Categories</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            From Date
-          </label>
-          <input
-            v-model="filters.fromDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            To Date
-          </label>
-          <input
-            v-model="filters.toDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div class="flex items-end">
-          <button
-            @click="clearFilters"
-            class="btn btn-outline w-full"
-          >
-            Clear Filters
-          </button>
-        </div>
+    <div class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input v-model="filters.startDate" type="date" class="input" />
+        <input v-model="filters.endDate" type="date" class="input" />
+        <select v-model="filters.category" class="select">
+          <option value="">All Categories</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
       </div>
       
       <div class="mt-4 flex items-center justify-between">
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-gray-600 dark:text-gray-300">
           {{ filteredExpenses.length }} expense{{ filteredExpenses.length !== 1 ? 's' : '' }}
         </div>
-        <div class="text-lg font-semibold text-gray-900">
+        <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Total: ${{ totalAmount.toFixed(2) }}
         </div>
       </div>
     </div>
     
     <!-- Expenses Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+          <thead class="bg-slate-50 dark:bg-slate-800">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Receipt
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th scope="col" class="table-header px-6 py-3 text-left">Date</th>
+              <th scope="col" class="table-header px-6 py-3 text-left">Expense</th>
+              <th scope="col" class="table-header px-6 py-3 text-left hidden sm:table-cell">Category</th>
+              <th scope="col" class="table-header px-6 py-3 text-right">Amount</th>
+              <th scope="col" class="table-header px-6 py-3 text-center">Receipt</th>
+              <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr
-              v-for="expense in paginatedExpenses"
-              :key="expense.id"
-              class="hover:bg-gray-50"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ format(parseISO(expense.expense_date), 'MMM d, yyyy') }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  {{ expense.category }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
-                <div class="max-w-xs truncate">{{ expense.description }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ${{ expense.amount.toFixed(2) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <div v-if="expense.bill_image_url" class="flex items-center">
-                  <button
-                    @click="viewReceipt(expense.bill_image_url)"
-                    class="text-primary-600 hover:text-primary-900"
-                  >
-                    <DocumentIcon class="w-5 h-5" />
-                  </button>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+            <tr v-if="loading" v-for="n in 5" :key="n">
+              <td class="px-6 py-4 whitespace-nowrap" colspan="6">
+                <div class="animate-pulse flex space-x-4">
+                  <div class="flex-1 space-y-2 py-1">
+                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
+                  </div>
                 </div>
-                <span v-else class="text-gray-400">No receipt</span>
+              </td>
+            </tr>
+            <tr v-if="!loading && paginatedExpenses.length === 0">
+              <td class="text-center py-10" colspan="6">
+                <div class="text-center text-slate-500">
+                  <p class="font-medium">No expenses found</p>
+                  <p class="text-sm">Try adjusting your filters.</p>
+                </div>
+              </td>
+            </tr>
+            <tr v-for="expense in paginatedExpenses" :key="expense.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{{ formatDate(expense.expense_date) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ expense.description }}</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400 sm:hidden">{{ expense.category }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ expense.category }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-800 dark:text-slate-200">${{ expense.amount.toFixed(2) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <button v-if="expense.bill_image_url" @click="viewReceipt(expense.bill_image_url)" class="btn btn-xs btn-ghost">
+                  <PaperClipIcon class="w-4 h-4" />
+                </button>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex items-center justify-end space-x-2">
-                  <button
-                    @click="editExpense(expense)"
-                    class="text-secondary-600 hover:text-secondary-900"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    @click="deleteExpense(expense)"
-                    class="text-error-600 hover:text-error-900"
-                  >
-                    Delete
-                  </button>
-                </div>
+                <button @click="editExpense(expense)" class="btn btn-sm btn-ghost">
+                  <PencilSquareIcon class="w-5 h-5" />
+                  <span class="sr-only">Edit</span>
+                </button>
+                <button @click="deleteExpense(expense)" class="btn btn-sm btn-ghost text-red-500 hover:text-red-700">
+                  <TrashIcon class="w-5 h-5" />
+                  <span class="sr-only">Delete</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -147,66 +91,27 @@
       </div>
       
       <!-- Pagination -->
-      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-        <div class="flex-1 flex justify-between sm:hidden">
+      <div v-if="totalPages > 1" class="card-footer flex items-center justify-between">
+        <div class="text-sm text-slate-600 dark:text-slate-400">
+          Showing <span class="font-medium">{{ startIndex + 1 }}</span> to <span class="font-medium">{{ Math.min(endIndex, filteredExpenses.length) }}</span> of <span class="font-medium">{{ filteredExpenses.length }}</span> results
+        </div>
+        <div class="flex items-center gap-1">
           <button
             @click="currentPage--"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-sm btn-outline"
           >
+            <ChevronLeftIcon class="h-4 w-4" />
             Previous
           </button>
           <button
             @click="currentPage++"
             :disabled="currentPage >= totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="btn btn-sm btn-outline"
           >
             Next
+            <ChevronRightIcon class="h-4 w-4" />
           </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700">
-              Showing
-              <span class="font-medium">{{ startIndex + 1 }}</span>
-              to
-              <span class="font-medium">{{ Math.min(endIndex, filteredExpenses.length) }}</span>
-              of
-              <span class="font-medium">{{ filteredExpenses.length }}</span>
-              results
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button
-                @click="currentPage--"
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                <ChevronLeftIcon class="h-5 w-5" />
-              </button>
-              <button
-                v-for="page in displayedPages"
-                :key="page"
-                @click="currentPage = page"
-                :class="[
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                  page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                ]"
-              >
-                {{ page }}
-              </button>
-              <button
-                @click="currentPage++"
-                :disabled="currentPage >= totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                <ChevronRightIcon class="h-5 w-5" />
-              </button>
-            </nav>
-          </div>
         </div>
       </div>
     </div>
@@ -295,11 +200,11 @@
           <p class="mt-1 text-sm text-gray-500">PNG, JPG, GIF up to 10MB</p>
         </div>
         
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex justify-end gap-3 pt-4">
           <button
             type="button"
             @click="closeExpenseModal"
-            class="btn btn-outline"
+            class="btn btn-secondary"
           >
             Cancel
           </button>
@@ -308,7 +213,7 @@
             :disabled="submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingExpense ? 'Update' : 'Create') }}
+            {{ submitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Create Expense') }}
           </button>
         </div>
       </form>
@@ -317,13 +222,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { format, parseISO } from 'date-fns'
 import {
   PlusIcon,
-  DocumentIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  PaperClipIcon
 } from '@heroicons/vue/24/outline'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
@@ -339,7 +246,7 @@ const currentPage = ref(1)
 const itemsPerPage = 10
 const showExpenseModal = ref(false)
 const editingExpense = ref<Expense | null>(null)
-const fileInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const categories = [
   'Rent',
@@ -355,12 +262,12 @@ const categories = [
 
 const filters = reactive({
   category: '',
-  fromDate: '',
-  toDate: ''
+  startDate: '',
+  endDate: ''
 })
 
 const expenseForm = reactive({
-  expense_date: '',
+  expense_date: new Date().toISOString().substring(0, 10),
   category: '',
   description: '',
   amount: 0,
@@ -374,12 +281,12 @@ const filteredExpenses = computed(() => {
     filtered = filtered.filter(expense => expense.category === filters.category)
   }
   
-  if (filters.fromDate) {
-    filtered = filtered.filter(expense => expense.expense_date >= filters.fromDate)
+  if (filters.startDate) {
+    filtered = filtered.filter(expense => expense.expense_date >= filters.startDate)
   }
   
-  if (filters.toDate) {
-    filtered = filtered.filter(expense => expense.expense_date <= filters.toDate)
+  if (filters.endDate) {
+    filtered = filtered.filter(expense => expense.expense_date <= filters.endDate)
   }
   
   return filtered.sort((a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime())
@@ -405,35 +312,25 @@ const paginatedExpenses = computed(() => {
   return filteredExpenses.value.slice(startIndex.value, endIndex.value)
 })
 
-const displayedPages = computed(() => {
-  const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, currentPage.value + 2)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
+const formatDate = (date: string | null) => {
+  if (!date) return 'N/A'
+  try {
+    return format(parseISO(date), 'MMM d, yyyy')
+  } catch (error) {
+    console.error('Invalid date format:', date)
+    return 'Invalid Date'
   }
-  
-  return pages
-})
+}
 
 const resetForm = () => {
   Object.assign(expenseForm, {
-    expense_date: format(new Date(), 'yyyy-MM-dd'),
+    expense_date: new Date().toISOString().substring(0, 10),
     category: '',
     description: '',
     amount: 0,
-    bill_image_url: ''
+    bill_image_url: '',
+    is_active: true
   })
-}
-
-const clearFilters = () => {
-  Object.assign(filters, {
-    category: '',
-    fromDate: '',
-    toDate: ''
-  })
-  currentPage.value = 1
 }
 
 const openNewExpenseModal = () => {
@@ -479,21 +376,14 @@ const handleFileUpload = async (event: Event) => {
   }
   
   try {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}.${fileExt}`
-    const filePath = `expense-receipts/${fileName}`
+    const fileName = `${Date.now()}_${file.name}`
+    const { data, error } = await supabase.storage.from('bills').upload(fileName, file)
     
-    const { error: uploadError } = await supabase.storage
-      .from('receipts')
-      .upload(filePath, file)
+    if (error) throw error
     
-    if (uploadError) throw uploadError
+    const { data: { publicUrl } } = supabase.storage.from('bills').getPublicUrl(data.path)
     
-    const { data } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(filePath)
-    
-    expenseForm.bill_image_url = data.publicUrl
+    expenseForm.bill_image_url = publicUrl
     
     addToast({
       type: 'success',
@@ -617,6 +507,7 @@ const deleteExpense = async (expense: Expense) => {
 }
 
 const fetchExpenses = async () => {
+  loading.value = true
   try {
     const { data, error } = await supabase
       .from('expenses')
@@ -632,12 +523,16 @@ const fetchExpenses = async () => {
       title: 'Error',
       message: 'Failed to fetch expenses'
     })
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(async () => {
-  loading.value = true
-  await fetchExpenses()
-  loading.value = false
+watch(filters, () => {
+  currentPage.value = 1
+}, { deep: true })
+
+onMounted(() => {
+  fetchExpenses()
 })
 </script>

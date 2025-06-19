@@ -1,74 +1,72 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '../lib/supabase'
-import Login from '../views/Login.vue'
-import Dashboard from '../views/Dashboard.vue'
-import Appointments from '../views/Appointments.vue'
-import Clients from '../views/Clients.vue'
-import Services from '../views/Services.vue'
-import Barbers from '../views/Barbers.vue'
-import Expenses from '../views/Expenses.vue'
-import DailyCollections from '../views/DailyCollections.vue'
-import Reports from '../views/Reports.vue'
+
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/login',
-      name: 'Login',
-      component: Login,
-      meta: { requiresAuth: false }
+      path: "/login",
+      name: "Login",
+      component: () => import('../views/Login.vue'),
+      meta: { requiresAuth: false },
     },
     {
-      path: '/',
-      name: 'Dashboard',
-      component: Dashboard,
-      meta: { requiresAuth: true }
+      path: "/",
+      name: "Dashboard",
+      component: () => import('../views/Dashboard.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/appointments',
-      name: 'Appointments',
-      component: Appointments,
-      meta: { requiresAuth: true }
+      path: "/appointments",
+      name: "Appointments",
+      component: () => import('../views/Appointments.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/clients',
-      name: 'Clients',
-      component: Clients,
-      meta: { requiresAuth: true }
+      path: "/clients",
+      name: "Clients",
+      component: () => import('../views/Clients.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/services',
-      name: 'Services',
-      component: Services,
-      meta: { requiresAuth: true }
+      path: "/services",
+      name: "Services",
+      component: () => import('../views/Services.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/barbers',
-      name: 'Barbers',
-      component: Barbers,
-      meta: { requiresAuth: true }
+      path: "/barbers",
+      name: "Barbers",
+      component: () => import('../views/Barbers.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/expenses',
-      name: 'Expenses',
-      component: Expenses,
-      meta: { requiresAuth: true }
+      path: "/expenses",
+      name: "Expenses",
+      component: () => import('../views/Expenses.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/daily-collections',
-      name: 'DailyCollections',
-      component: DailyCollections,
-      meta: { requiresAuth: true }
+      path: "/daily-collections",
+      name: "DailyCollections",
+      component: () => import('../views/DailyCollections.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/reports',
-      name: 'Reports',
-      component: Reports,
-      meta: { requiresAuth: true }
-    }
-  ]
-})
+      path: "/reports",
+      name: "Reports",
+      component: () => import('../views/Reports.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/barbers/:id",
+      name: "BarberProfile",
+      component: () => import('../views/BarberProfile.vue'),
+      meta: { requiresAuth: true },
+    },
+  ],
+});
 
 router.beforeEach(async (to, _from, next) => {
   const { data: { session } } = await supabase.auth.getSession()
