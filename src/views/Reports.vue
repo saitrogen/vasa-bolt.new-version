@@ -62,8 +62,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { supabase } from '../lib/supabase';
-import { format, parseISO } from 'date-fns';
-import type { Barber, Appointment, DailyCollection } from '../types';
+import type { Barber } from '../types';
 
 const selectedReport = ref('daily');
 const reportData = ref<any[]>([]);
@@ -80,7 +79,6 @@ const reportHeaders = computed(() => {
 });
 
 const generateReport = async () => {
-  let query = supabase;
   let data: any[] | null = [];
   
   if (selectedReport.value === 'daily') {

@@ -26,26 +26,26 @@
           >
             <DialogPanel
               :class="[
-                'w-full transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all',
+                'w-full transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all',
                 sizeClasses[size]
               ]"
             >
-              <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
                 <DialogTitle
                   as="h3"
-                  class="text-lg font-medium leading-6 text-gray-900"
+                  class="text-lg font-medium leading-6 text-slate-900 dark:text-slate-100"
                 >
                   {{ title }}
                 </DialogTitle>
                 <button
                   @click="closeModal"
-                  class="text-gray-400 hover:text-gray-600 transition-colors"
+                  class="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
                   <XMarkIcon class="w-6 h-6" />
                 </button>
               </div>
               
-              <div class="mt-2">
+              <div class="mt-4">
                 <slot />
               </div>
             </DialogPanel>

@@ -139,7 +139,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase'
-import type { Barber, Appointment, DailyCollection, Client } from '../types'
+import type { Barber, Appointment, DailyCollection } from '../types'
 
 const route = useRoute()
 const router = useRouter()

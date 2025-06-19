@@ -2,122 +2,111 @@
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Clients</h1>
-      <div class="flex items-center gap-4">
-        <input v-model="searchQuery" type="text" placeholder="Search clients..." class="input w-full md:w-64">
-        <button @click="isModalOpen = true" class="btn btn-primary">
+      <div class="flex items-center gap-2">
+        <div class="relative w-full md:w-64">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon class="h-5 w-5 text-slate-400" />
+          </div>
+          <input v-model="searchQuery" type="text" placeholder="Search clients..." class="input pl-10 w-full">
+        </div>
+        <button @click="openNewClientModal" class="btn btn-primary">
           <PlusIcon class="w-4 h-4 md:mr-2" />
-          <span class="hidden md:inline">Add Client</span>
+          <span class="hidden md:inline">New Client</span>
         </button>
-      </div>
-    </div>
-    
-    <!-- Search and Filter -->
-    <div class="card p-4">
-      <div class="flex items-center space-x-4">
-        <div class="flex-1">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search clients by name, phone, or email..."
-            class="input w-full"
-          />
-        </div>
-        <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
-          {{ filteredClients.length }} client{{ filteredClients.length !== 1 ? 's' : '' }}
-        </div>
       </div>
     </div>
     
     <!-- Clients Table -->
     <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <div class="min-w-full inline-block align-middle">
-          <div class="overflow-hidden">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-              <thead>
-                <tr>
-                  <th scope="col" class="table-header px-6 py-3 text-left">Name</th>
-                  <th scope="col" class="table-header px-6 py-3 text-left">Email</th>
-                  <th scope="col" class="table-header px-6 py-3 text-left">Phone</th>
-                  <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                <tr v-for="client in filteredClients" :key="client.id" class="table-row">
-                  <td class="table-cell px-6 py-4 font-medium">{{ client.name }}</td>
-                  <td class="table-cell px-6 py-4">{{ client.email }}</td>
-                  <td class="table-cell px-6 py-4">{{ client.phone_number }}</td>
-                  <td class="table-cell px-6 py-4 text-right">
-                    <button @click="editClient(client)" class="btn btn-ghost">Edit</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+          <thead class="bg-slate-50 dark:bg-slate-800">
+            <tr>
+              <th scope="col" class="table-header px-6 py-3 text-left">Client</th>
+              <th scope="col" class="table-header px-6 py-3 text-left hidden sm:table-cell">Contact</th>
+              <th scope="col" class="table-header px-6 py-3 text-center hidden md:table-cell">Appointments</th>
+              <th scope="col" class="table-header px-6 py-3 text-left hidden lg:table-cell">Last Visit</th>
+              <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+            <tr v-if="loading" v-for="n in 5" :key="n">
+              <td class="px-6 py-4 whitespace-nowrap" colspan="5">
+                <div class="animate-pulse flex space-x-4">
+                  <div class="rounded-full bg-slate-200 dark:bg-slate-700 h-10 w-10"></div>
+                  <div class="flex-1 space-y-2 py-1">
+                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!loading && paginatedClients.length === 0">
+              <td class="text-center py-10" colspan="5">
+                <div class="text-center text-slate-500">
+                  <p class="font-medium">No clients found</p>
+                  <p v-if="searchQuery" class="text-sm">Try adjusting your search.</p>
+                </div>
+              </td>
+            </tr>
+            <tr v-for="client in paginatedClients" :key="client.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" @click="viewClientHistory(client)">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">
+                      {{ getInitials(client.name) }}
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ client.name }}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 lg:hidden">{{ client.email || client.phone_number }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                <div class="text-sm text-slate-900 dark:text-slate-100">{{ client.email }}</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400">{{ client.phone_number }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center hidden md:table-cell">
+                <span class="text-sm text-slate-500 dark:text-slate-400">{{ getClientAppointmentCount(client.id) }} Total</span>
+                <span v-if="getClientUpcomingCount(client.id) > 0" class="ml-2 badge badge-success">{{ getClientUpcomingCount(client.id) }} Upcoming</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 hidden lg:table-cell">
+                {{ getLastVisitDate(client.id) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button @click.stop="editClient(client)" class="btn btn-sm btn-ghost">
+                  <PencilSquareIcon class="w-5 h-5" />
+                  <span class="sr-only">Edit</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       
       <!-- Pagination -->
-      <div class="card-content border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
+      <div v-if="totalPages > 1" class="card-footer flex items-center justify-between">
+        <div class="text-sm text-slate-600 dark:text-slate-400">
+          Page {{ currentPage }} of {{ totalPages }}
+        </div>
+        <div class="flex items-center gap-1">
           <button
             @click="currentPage--"
             :disabled="currentPage === 1"
-            class="btn btn-outline"
+            class="btn btn-sm btn-outline"
           >
+            <ChevronLeftIcon class="h-4 w-4" />
             Previous
           </button>
           <button
             @click="currentPage++"
             :disabled="currentPage >= totalPages"
-            class="btn btn-outline ml-3"
+            class="btn btn-sm btn-outline"
           >
             Next
+            <ChevronRightIcon class="h-4 w-4" />
           </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700 dark:text-gray-300">
-              Showing
-              <span class="font-medium">{{ startIndex + 1 }}</span>
-              to
-              <span class="font-medium">{{ Math.min(endIndex, filteredClients.length) }}</span>
-              of
-              <span class="font-medium">{{ filteredClients.length }}</span>
-              results
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button
-                @click="currentPage--"
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <ChevronLeftIcon class="h-5 w-5" />
-              </button>
-              <button
-                v-for="page in displayedPages"
-                :key="page"
-                @click="currentPage = page"
-                :class="[
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                  page === currentPage
-                    ? 'z-10 bg-primary-50 dark:bg-primary-900 border-primary-500 text-primary-600 dark:text-primary-200'
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                ]"
-              >
-                {{ page }}
-              </button>
-              <button
-                @click="currentPage++"
-                :disabled="currentPage >= totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <ChevronRightIcon class="h-5 w-5" />
-              </button>
-            </nav>
-          </div>
         </div>
       </div>
     </div>
@@ -130,9 +119,7 @@
     >
       <form @submit.prevent="saveClient" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Full Name *
-          </label>
+          <label class="label">Full Name *</label>
           <input
             v-model="clientForm.name"
             type="text"
@@ -142,47 +129,42 @@
           />
         </div>
         
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Phone Number
-          </label>
-          <input
-            v-model="clientForm.phone_number"
-            type="tel"
-            class="input"
-            placeholder="(555) 123-4567"
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">Phone Number</label>
+            <input
+              v-model="clientForm.phone_number"
+              type="tel"
+              class="input"
+              placeholder="(555) 123-4567"
+            />
+          </div>
+          <div>
+            <label class="label">Email Address</label>
+            <input
+              v-model="clientForm.email"
+              type="email"
+              class="input"
+              placeholder="client@example.com"
+            />
+          </div>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Email Address
-          </label>
-          <input
-            v-model="clientForm.email"
-            type="email"
-            class="input"
-            placeholder="client@example.com"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Notes
-          </label>
+          <label class="label">Notes</label>
           <textarea
             v-model="clientForm.notes"
-            rows="3"
+            rows="4"
             class="textarea"
             placeholder="Any preferences, allergies, or other notes..."
           ></textarea>
         </div>
         
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex justify-end gap-3 pt-4">
           <button
             type="button"
             @click="closeClientModal"
-            class="btn btn-outline"
+            class="btn btn-secondary"
           >
             Cancel
           </button>
@@ -191,7 +173,7 @@
             :disabled="submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingClient ? 'Update' : 'Create') }}
+            {{ submitting ? 'Saving...' : (editingClient ? 'Update Client' : 'Create Client') }}
           </button>
         </div>
       </form>
@@ -199,47 +181,58 @@
     
     <!-- Client History Modal -->
     <Modal
+      v-if="selectedClient"
       :is-open="showHistoryModal"
-      :title="`${selectedClient?.name} - Appointment History`"
+      :title="`${selectedClient.name}`"
       size="lg"
       @close="closeHistoryModal"
     >
       <div class="space-y-4">
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-slate-500 dark:text-slate-400">
           Total appointments: {{ clientAppointments.length }}
         </div>
         
-        <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="space-y-3 max-h-[60vh] overflow-y-auto -m-3 p-3 pretty-scrollbar">
+          <div
+            v-if="clientAppointments.length === 0"
+            class="text-center py-10 text-slate-500"
+          >
+            No appointments found for this client.
+          </div>
           <div
             v-for="appointment in clientAppointments"
             :key="appointment.id"
-            class="p-4 border border-gray-200 rounded-lg"
+            class="card card-compact"
           >
-            <div class="flex items-center justify-between mb-2">
-              <div class="font-medium text-gray-900">
-                {{ format(parseISO(appointment.start_time), 'MMM d, yyyy') }}
+            <div class="card-body">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="font-medium text-slate-800 dark:text-slate-200">
+                    {{ format(parseISO(appointment.start_time), 'EEEE, MMM d, yyyy') }}
+                  </div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ format(parseISO(appointment.start_time), 'h:mm a') }} with {{ appointment.barber?.name }}
+                  </div>
+                </div>
+                <div :class="['badge', getStatusBadgeClass(appointment.status)]">
+                  {{ appointment.status }}
+                </div>
               </div>
-              <div :class="['badge', getStatusBadgeClass(appointment.status)]">
-                {{ appointment.status }}
+              <div class="mt-2 text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                <div v-if="appointment.services?.length" class="flex items-center gap-2">
+                  <TagIcon class="w-4 h-4 text-slate-400" />
+                  <span>{{ appointment.services.map(s => s.service?.name).join(', ') }}</span>
+                </div>
+                <div v-if="appointment.total_amount" class="flex items-center gap-2">
+                  <CurrencyDollarIcon class="w-4 h-4 text-slate-400" />
+                  <span>${{ appointment.total_amount }}</span>
+                </div>
+                <div v-if="appointment.notes" class="pt-1 flex items-start gap-2">
+                  <ChatBubbleLeftRightIcon class="w-4 h-4 text-slate-400 mt-0.5" />
+                  <span class="italic">{{ appointment.notes }}</span>
+                </div>
               </div>
             </div>
-            <div class="text-sm text-gray-600">
-              <div>Barber: {{ appointment.barber?.name }}</div>
-              <div>Time: {{ format(parseISO(appointment.start_time), 'h:mm a') }}</div>
-              <div v-if="appointment.services?.length">
-                Services: {{ appointment.services.map(s => s.service?.name).join(', ') }}
-              </div>
-              <div v-if="appointment.total_amount">
-                Amount: ${{ appointment.total_amount }}
-              </div>
-              <div v-if="appointment.notes" class="mt-1 italic">
-                {{ appointment.notes }}
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="clientAppointments.length === 0" class="text-center py-8 text-gray-500">
-            No appointments found for this client.
           </div>
         </div>
       </div>
@@ -248,12 +241,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { format, parseISO } from 'date-fns'
 import {
   PlusIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  PencilSquareIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+  CurrencyDollarIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
@@ -274,7 +272,6 @@ const showClientModal = ref(false)
 const editingClient = ref<Client | null>(null)
 const showHistoryModal = ref(false)
 const selectedClient = ref<Client | null>(null)
-const isModalOpen = ref(false)
 
 const clientForm = reactive({
   name: '',
@@ -289,7 +286,7 @@ const filteredClients = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return clients.value.filter(client =>
     client.name.toLowerCase().includes(query) ||
-    (client.phone_number && client.phone_number.toLowerCase().includes(query)) ||
+    (client.phone_number && client.phone_number.includes(query)) ||
     (client.email && client.email.toLowerCase().includes(query))
   )
 })
@@ -308,18 +305,6 @@ const endIndex = computed(() => {
 
 const paginatedClients = computed(() => {
   return filteredClients.value.slice(startIndex.value, endIndex.value)
-})
-
-const displayedPages = computed(() => {
-  const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, currentPage.value + 2)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
 })
 
 const clientAppointments = computed(() => {
@@ -364,8 +349,7 @@ const getLastVisitDate = (clientId: string) => {
 
 const getStatusBadgeClass = (status: string) => {
   const classes = {
-    'booked': 'badge-default',
-    'confirmed': 'badge-success',
+    'scheduled': 'badge-info',
     'completed': 'badge-success',
     'cancelled': 'badge-error',
     'no-show': 'badge-warning'
@@ -477,6 +461,7 @@ const saveClient = async () => {
 }
 
 const fetchClients = async () => {
+  loading.value = true
   try {
     const { data, error } = await supabase
       .from('clients')
@@ -492,6 +477,8 @@ const fetchClients = async () => {
       title: 'Error',
       message: 'Failed to fetch clients'
     })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -499,15 +486,7 @@ const fetchAppointments = async () => {
   try {
     const { data, error } = await supabase
       .from('appointments')
-      .select(`
-        *,
-        barber:barbers(*),
-        services:appointment_services(
-          *,
-          service:services(*)
-        )
-      `)
-      .order('start_time', { ascending: false })
+      .select('*, barber:barbers(name), services:appointment_services(service:services(name))')
     
     if (error) throw error
     
@@ -517,12 +496,12 @@ const fetchAppointments = async () => {
   }
 }
 
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
 onMounted(async () => {
-  loading.value = true
-  await Promise.all([
-    fetchClients(),
-    fetchAppointments()
-  ])
-  loading.value = false
+  await fetchClients()
+  await fetchAppointments()
 })
 </script>

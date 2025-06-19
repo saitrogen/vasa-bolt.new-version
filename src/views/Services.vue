@@ -13,36 +13,76 @@
       <div
         v-for="service in services"
         :key="service.id"
-        :class="[
-          'card flex flex-col',
-          !service.is_active && 'opacity-60'
-        ]"
+        class="card flex flex-col transition-all duration-300 hover:shadow-lg dark:hover:shadow-primary-500/10"
       >
-        <div class="p-6 flex-grow">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {{ service.name }}
-          </h3>
-          <p v-if="service.description" class="text-slate-500 dark:text-slate-400 mt-1 min-h-[40px]">
+        <div class="p-5 flex-grow">
+          <div class="flex items-start justify-between">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 pr-4">
+              {{ service.name }}
+            </h3>
+            <div
+              @click.stop="toggleServiceStatus(service)"
+              :class="[
+                'relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:ring-primary-500',
+                service.is_active ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'
+              ]"
+            >
+              <span
+                :class="[
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200',
+                  service.is_active ? 'translate-x-5' : 'translate-x-0'
+                ]"
+              />
+            </div>
+          </div>
+          <p v-if="service.description" class="text-slate-500 dark:text-slate-400 mt-2 text-sm min-h-[40px]">
             {{ service.description }}
           </p>
-          <div class="flex items-baseline mt-4">
-            <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-              ${{ service.price }}
-            </span>
-            <span class="text-sm text-slate-500 dark:text-slate-400 ml-1">/ {{ service.duration_minutes }} min</span>
+          <div class="flex items-center gap-6 mt-4 text-sm">
+            <div class="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold">
+              <CurrencyDollarIcon class="w-5 h-5" />
+              <span>${{ service.price }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <ClockIcon class="w-5 h-5" />
+              <span>{{ service.duration_minutes }} min</span>
+            </div>
           </div>
         </div>
-        <div class="card-footer bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-200/80 dark:border-slate-800 flex justify-end gap-2">
+        <div class="card-footer bg-slate-50 dark:bg-slate-800/50 p-3">
           <button
             @click="editService(service)"
-            class="btn btn-secondary"
+            class="btn btn-sm btn-ghost w-full"
           >
+            <PencilSquareIcon class="w-4 h-4 mr-2" />
             Edit
           </button>
         </div>
       </div>
       
-      <div v-if="services.length === 0 && !loading" class="col-span-full">
+      <div v-if="loading" v-for="n in 4" :key="`skel-${n}`" class="card">
+        <div class="p-5">
+          <div class="animate-pulse flex flex-col space-y-4">
+            <div class="flex justify-between items-start">
+              <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+              <div class="h-6 w-11 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
+            </div>
+            <div class="flex gap-6">
+              <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+              <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-slate-50 dark:bg-slate-800/50 p-3">
+          <div class="h-8 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+        </div>
+      </div>
+      
+      <div v-if="!loading && services.length === 0" class="col-span-full">
         <div class="text-center py-12">
           <WrenchScrewdriverIcon class="mx-auto h-12 w-12 text-gray-400" />
           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No services</h3>
@@ -68,7 +108,7 @@
     >
       <form @submit.prevent="saveService" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="label">
             Service Name *
           </label>
           <input
@@ -82,7 +122,7 @@
         
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="label">
               Price *
             </label>
             <div class="relative">
@@ -102,7 +142,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="label">
               Duration (minutes) *
             </label>
             <input
@@ -118,7 +158,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="label">
             Description
           </label>
           <textarea
@@ -129,22 +169,22 @@
           ></textarea>
         </div>
         
-        <div v-if="editingService">
-          <label class="flex items-center">
+        <div v-if="editingService" class="form-control">
+          <label class="label cursor-pointer justify-start">
             <input
               v-model="serviceForm.is_active"
               type="checkbox"
-              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="checkbox"
             />
-            <span class="ml-2 text-sm text-gray-700">Service is active</span>
+            <span class="label-text ml-3">Service is active</span>
           </label>
         </div>
         
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex justify-end gap-3 pt-4">
           <button
             type="button"
             @click="closeServiceModal"
-            class="btn btn-outline"
+            class="btn btn-secondary"
           >
             Cancel
           </button>
@@ -153,7 +193,7 @@
             :disabled="submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingService ? 'Update' : 'Create') }}
+            {{ submitting ? 'Saving...' : (editingService ? 'Update Service' : 'Create Service') }}
           </button>
         </div>
       </form>
@@ -165,12 +205,11 @@
 import { ref, onMounted, reactive } from 'vue'
 import {
   PlusIcon,
+  WrenchScrewdriverIcon,
+  PencilSquareIcon,
   CurrencyDollarIcon,
   ClockIcon,
-  WrenchScrewdriverIcon,
-  EllipsisVerticalIcon
 } from '@heroicons/vue/24/outline'
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
 import Modal from '../components/Modal.vue'
@@ -321,6 +360,7 @@ const toggleServiceStatus = async (service: Service) => {
 }
 
 const fetchServices = async () => {
+  loading.value = true
   try {
     const { data, error } = await supabase
       .from('services')
@@ -336,12 +376,12 @@ const fetchServices = async () => {
       title: 'Error',
       message: 'Failed to fetch services'
     })
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(async () => {
-  loading.value = true
-  await fetchServices()
-  loading.value = false
+onMounted(() => {
+  fetchServices()
 })
 </script>

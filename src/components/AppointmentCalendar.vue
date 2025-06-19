@@ -48,14 +48,6 @@
             >
               Today
             </button>
-            
-            <button
-              @click="$emit('new-appointment')"
-              class="btn btn-primary"
-            >
-              <PlusIcon class="w-4 h-4 md:mr-2" />
-              <span class="hidden md:inline">New Appointment</span>
-            </button>
           </div>
         </div>
       </div>
@@ -151,7 +143,8 @@
           <div
             v-for="hour in businessHours"
             :key="hour"
-            class="flex items-center space-x-4 p-2 border border-slate-100 dark:border-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50"
+            class="flex items-center space-x-4 p-2 border border-slate-100 dark:border-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+            @click="createAppointment(currentDate, hour)"
           >
             <div class="w-16 text-sm text-slate-500 dark:text-slate-400">
               {{ formatTime(hour) }}
@@ -164,7 +157,7 @@
                   'p-2 rounded-md cursor-pointer hover:shadow-md transition-shadow',
                   getAppointmentColor(appointment.status)
                 ]"
-                @click="$emit('edit-appointment', appointment)"
+                @click.stop="$emit('edit-appointment', appointment)"
               >
                 <div class="font-medium">{{ appointment.client?.name }}</div>
                 <div class="text-sm opacity-75">{{ appointment.barber?.name }}</div>
@@ -246,7 +239,6 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfM
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  PlusIcon
 } from '@heroicons/vue/24/outline'
 import type { Appointment, Barber } from '../types'
 import { useBreakpoints } from '../composables/useBreakpoints'
