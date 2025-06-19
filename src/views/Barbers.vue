@@ -1,129 +1,41 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Barbers</h1>
-      <button
-        @click="openNewBarberModal"
-        class="btn btn-primary"
-      >
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Add Barber
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Barbers</h1>
+      <button @click="openNewBarberModal" class="btn btn-primary">
+        <PlusIcon class="w-4 h-4 md:mr-2" />
+        <span class="hidden md:inline">Add Barber</span>
       </button>
     </div>
-    
-    <!-- Barbers Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        v-for="barber in barbers"
-        :key="barber.id"
-        :class="[
-          'card hover:shadow-md transition-shadow',
-          !barber.is_active && 'opacity-60'
-        ]"
-      >
-        <div class="card-content">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="flex-shrink-0">
-                <div class="h-16 w-16 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                  <span class="text-xl font-medium text-gray-700 dark:text-gray-200">
-                    {{ getInitials(barber.name) }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex-1">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:underline"
-                  @click="goToProfile(barber.id)">
-                  {{ barber.name }}
-                </h3>
-                <div class="mt-1 space-y-1">
-                  <div v-if="barber.phone_number_work" class="text-sm text-gray-600 dark:text-gray-400">
-                    Work: {{ barber.phone_number_work }}
-                  </div>
-                  <div v-if="barber.email" class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ barber.email }}
-                  </div>
-                </div>
-                <div class="mt-2 flex items-center">
-                  <div :class="[
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    barber.is_active
-                      ? 'badge-success'
-                      : 'badge-default'
-                  ]">
-                    {{ barber.is_active ? 'Active' : 'Inactive' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <Menu as="div" class="relative">
-              <MenuButton class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <EllipsisVerticalIcon class="w-5 h-5" />
-              </MenuButton>
-              <transition
-                enter-active-class="transition duration-100 ease-out"
-                enter-from-class="transform scale-95 opacity-0"
-                enter-to-class="transform scale-100 opacity-100"
-                leave-active-class="transition duration-75 ease-in"
-                leave-from-class="transform scale-100 opacity-100"
-                leave-to-class="transform scale-95 opacity-0"
-              >
-                <MenuItems class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                  <div class="py-1">
-                    <MenuItem v-slot="{ active }">
-                      <button
-                        @click="editBarber(barber)"
-                        :class="[
-                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
-                          'block w-full text-left px-4 py-2 text-sm'
-                        ]"
-                      >
-                        Edit Barber
-                      </button>
-                    </MenuItem>
-                    <MenuItem v-slot="{ active }">
-                      <button
-                        @click="manageSchedule(barber)"
-                        :class="[
-                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
-                          'block w-full text-left px-4 py-2 text-sm'
-                        ]"
-                      >
-                        Manage Schedule
-                      </button>
-                    </MenuItem>
-                    <MenuItem v-slot="{ active }">
-                      <button
-                        @click="toggleBarberStatus(barber)"
-                        :class="[
-                          active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
-                          'block w-full text-left px-4 py-2 text-sm'
-                        ]"
-                      >
-                        {{ barber.is_active ? 'Deactivate' : 'Activate' }}
-                      </button>
-                    </MenuItem>
-                  </div>
-                </MenuItems>
-              </transition>
-            </Menu>
-          </div>
-        </div>
-      </div>
-      
-      <div v-if="barbers.length === 0 && !loading" class="col-span-full">
-        <div class="text-center py-12">
-          <UsersIcon class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No barbers</h3>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by adding your first barber.</p>
-          <div class="mt-6">
-            <button
-              @click="openNewBarberModal"
-              class="btn btn-primary"
-            >
-              <PlusIcon class="w-4 h-4 mr-2" />
-              Add Barber
-            </button>
+
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <div class="min-w-full inline-block align-middle">
+          <div class="overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <thead>
+                <tr>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Name</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Phone</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Email</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-for="barber in barbers" :key="barber.id" class="table-row">
+                  <td class="table-cell px-6 py-4">
+                    <router-link :to="`/barbers/${barber.id}`" class="font-medium hover:underline">
+                      {{ barber.name }}
+                    </router-link>
+                  </td>
+                  <td class="table-cell px-6 py-4">{{ barber.phone_number_work }}</td>
+                  <td class="table-cell px-6 py-4">{{ barber.email }}</td>
+                  <td class="table-cell px-6 py-4 text-right">
+                    <button @click="editBarber(barber)" class="btn btn-ghost">Edit</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

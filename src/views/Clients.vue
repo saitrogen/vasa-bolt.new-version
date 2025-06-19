@@ -1,14 +1,14 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Clients</h1>
-      <button
-        @click="openNewClientModal"
-        class="btn btn-primary"
-      >
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Add Client
-      </button>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Clients</h1>
+      <div class="flex items-center gap-4">
+        <input v-model="searchQuery" type="text" placeholder="Search clients..." class="input w-full md:w-64">
+        <button @click="isModalOpen = true" class="btn btn-primary">
+          <PlusIcon class="w-4 h-4 md:mr-2" />
+          <span class="hidden md:inline">Add Client</span>
+        </button>
+      </div>
     </div>
     
     <!-- Search and Filter -->
@@ -31,83 +31,30 @@
     <!-- Clients Table -->
     <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700/50">
-            <tr>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Name
-              </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Contact
-              </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Appointments
-              </th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Last Visit
-              </th>
-              <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr
-              v-for="client in paginatedClients"
-              :key="client.id"
-              class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-            >
-              <td class="px-6 py-5 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-10 w-10">
-                    <div class="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                      <span class="text-sm font-semibold text-primary-700 dark:text-primary-200">
-                        {{ getInitials(client.name) }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="ml-4">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ client.name }}</div>
-                    <div v-if="client.notes" class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs mt-0.5">
-                      {{ client.notes }}
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-5 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ client.phone_number }}</div>
-                <div class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ client.email }}</div>
-              </td>
-              <td class="px-6 py-5 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {{ getClientAppointmentCount(client.id) }} appointments
-                </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {{ getClientUpcomingCount(client.id) }} upcoming
-                </div>
-              </td>
-              <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {{ getLastVisitDate(client.id) }}
-              </td>
-              <td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex items-center justify-end space-x-3">
-                  <button
-                    @click="viewClientHistory(client)"
-                    class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-semibold transition-colors"
-                  >
-                    History
-                  </button>
-                  <button
-                    @click="editClient(client)"
-                    class="text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-300"
-                  >
-                    Edit
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="min-w-full inline-block align-middle">
+          <div class="overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <thead>
+                <tr>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Name</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Email</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Phone</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-for="client in filteredClients" :key="client.id" class="table-row">
+                  <td class="table-cell px-6 py-4 font-medium">{{ client.name }}</td>
+                  <td class="table-cell px-6 py-4">{{ client.email }}</td>
+                  <td class="table-cell px-6 py-4">{{ client.phone_number }}</td>
+                  <td class="table-cell px-6 py-4 text-right">
+                    <button @click="editClient(client)" class="btn btn-ghost">Edit</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       
       <!-- Pagination -->
@@ -327,6 +274,7 @@ const showClientModal = ref(false)
 const editingClient = ref<Client | null>(null)
 const showHistoryModal = ref(false)
 const selectedClient = ref<Client | null>(null)
+const isModalOpen = ref(false)
 
 const clientForm = reactive({
   name: '',

@@ -1,36 +1,37 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Appointments</h1>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Appointments</h1>
+      <button @click="openModal(null)" class="btn btn-primary">
+        <PlusIcon class="w-4 h-4 md:mr-2" />
+        <span class="hidden md:inline">New Appointment</span>
+      </button>
     </div>
     
     <AppointmentCalendar
       :appointments="appointments"
       :barbers="barbers"
       :loading="loading"
-      @new-appointment="openNewAppointmentModal"
-      @edit-appointment="openEditAppointmentModal"
+      @date-click="handleDateClick"
+      @event-click="handleEventClick"
     />
     
     <!-- New/Edit Appointment Modal -->
     <Modal
-      :is-open="showAppointmentModal"
+      :is-open="isModalOpen"
+      @close="closeModal"
       :title="editingAppointment ? 'Edit Appointment' : 'New Appointment'"
-      size="lg"
-      @close="closeAppointmentModal"
     >
       <form @submit.prevent="saveAppointment" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Client *
-            </label>
+            <label class="block text-sm font-medium">Client</label>
             <select
-              v-model="appointmentForm.client_id"
+              v-model="form.client_id"
               required
               class="select"
             >
-              <option value="">Select a client</option>
+              <option value="">Select Client</option>
               <option
                 v-for="client in clients"
                 :key="client.id"
@@ -42,17 +43,15 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Barber *
-            </label>
+            <label class="block text-sm font-medium">Barber</label>
             <select
-              v-model="appointmentForm.barber_id"
+              v-model="form.barber_id"
               required
               class="select"
             >
-              <option value="">Select a barber</option>
+              <option value="">Select Barber</option>
               <option
-                v-for="barber in activeBarbers"
+                v-for="barber in barbers"
                 :key="barber.id"
                 :value="barber.id"
               >
@@ -62,13 +61,11 @@
           </div>
         </div>
         
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Date *
-            </label>
+            <label class="block text-sm font-medium">Date</label>
             <input
-              v-model="appointmentForm.date"
+              v-model="form.date"
               type="date"
               required
               class="input"
@@ -76,11 +73,9 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Time *
-            </label>
+            <label class="block text-sm font-medium">Time</label>
             <input
-              v-model="appointmentForm.time"
+              v-model="form.time"
               type="time"
               required
               class="input"
@@ -89,53 +84,51 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Services *
-          </label>
-          <div class="space-y-2 max-h-32 overflow-y-auto">
+          <label class="block text-sm font-medium">Services</label>
+          <div class="max-h-60 overflow-y-auto card p-2 space-y-2 mt-1">
             <label
-              v-for="service in activeServices"
+              v-for="service in services"
               :key="service.id"
-              class="flex items-center space-x-3 p-2 border border-gray-200 rounded-md hover:bg-gray-50"
+              class="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <input
                 type="checkbox"
                 :value="service.id"
-                v-model="appointmentForm.service_ids"
-                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                v-model="form.service_ids"
+                class="rounded text-primary-600 focus:ring-primary-500"
               />
-              <div class="flex-1">
-                <div class="font-medium">{{ service.name }}</div>
-                <div class="text-sm text-gray-500">
-                  ${{ service.price }} • {{ service.duration_minutes }}min
-                </div>
-              </div>
+              <span>{{ service.name }} - ${{ service.price }} ({{ service.duration_minutes }} min)</span>
             </label>
           </div>
         </div>
         
+        <div>
+          <label class="block text-sm font-medium">Notes</label>
+          <textarea
+            v-model="form.notes"
+            rows="3"
+            class="textarea"
+            placeholder="Optional notes about the appointment"
+          ></textarea>
+        </div>
+        
         <div v-if="editingAppointment">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Status
-          </label>
+          <label class="block text-sm font-medium">Status</label>
           <select
-            v-model="appointmentForm.status"
+            v-model="form.status"
             class="select"
           >
-            <option value="booked">Booked</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="no-show">No Show</option>
+            <option>scheduled</option>
+            <option>completed</option>
+            <option>cancelled</option>
+            <option>no-show</option>
           </select>
         </div>
         
-        <div v-if="appointmentForm.status === 'completed'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Total Amount
-          </label>
+        <div v-if="form.status === 'completed'">
+          <label class="block text-sm font-medium">Total Amount</label>
           <input
-            v-model.number="appointmentForm.total_amount"
+            v-model.number="form.total_amount"
             type="number"
             step="0.01"
             min="0"
@@ -144,32 +137,19 @@
           />
         </div>
         
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Notes
-          </label>
-          <textarea
-            v-model="appointmentForm.notes"
-            rows="3"
-            class="textarea"
-            placeholder="Optional notes about the appointment"
-          ></textarea>
-        </div>
-        
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex justify-end gap-2">
           <button
             type="button"
-            @click="closeAppointmentModal"
+            @click="closeModal"
             class="btn btn-outline"
           >
             Cancel
           </button>
           <button
             type="submit"
-            :disabled="submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingAppointment ? 'Update' : 'Create') }}
+            Save
           </button>
         </div>
       </form>
@@ -184,6 +164,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
 import AppointmentCalendar from '../components/AppointmentCalendar.vue'
 import Modal from '../components/Modal.vue'
+import { PlusIcon } from '@heroicons/vue/24/outline'
 import type { Appointment, Client, Barber, Service } from '../types'
 
 const { addToast } = useToast()
@@ -193,17 +174,17 @@ const clients = ref<Client[]>([])
 const barbers = ref<Barber[]>([])
 const services = ref<Service[]>([])
 const loading = ref(true)
-const submitting = ref(false)
-const showAppointmentModal = ref(false)
+const isModalOpen = ref(false)
 const editingAppointment = ref<Appointment | null>(null)
 
-const appointmentForm = reactive({
+const form = reactive({
+  id: null as string | null,
   client_id: '',
   barber_id: '',
   date: '',
   time: '',
   service_ids: [] as string[],
-  status: 'booked',
+  status: 'scheduled',
   total_amount: 0,
   notes: ''
 })
@@ -217,60 +198,51 @@ const activeServices = computed(() => {
 })
 
 const resetForm = () => {
-  Object.assign(appointmentForm, {
+  Object.assign(form, {
     client_id: '',
     barber_id: '',
     date: '',
     time: '',
     service_ids: [],
-    status: 'booked',
+    status: 'scheduled',
     total_amount: 0,
     notes: ''
   })
 }
 
-const openNewAppointmentModal = (date?: Date, hour?: number) => {
-  editingAppointment.value = null
-  resetForm()
-  
-  if (date) {
-    appointmentForm.date = format(date, 'yyyy-MM-dd')
-  }
-  if (hour !== undefined) {
-    appointmentForm.time = `${hour.toString().padStart(2, '0')}:00`
-  }
-  
-  showAppointmentModal.value = true
-}
-
-const openEditAppointmentModal = (appointment: Appointment) => {
+const openModal = (appointment: Appointment | null) => {
   editingAppointment.value = appointment
   
-  const startTime = parseISO(appointment.start_time)
-  appointmentForm.client_id = appointment.client_id
-  appointmentForm.barber_id = appointment.barber_id
-  appointmentForm.date = format(startTime, 'yyyy-MM-dd')
-  appointmentForm.time = format(startTime, 'HH:mm')
-  appointmentForm.status = appointment.status
-  appointmentForm.total_amount = appointment.total_amount || 0
-  appointmentForm.notes = appointment.notes || ''
-  
-  // Load appointment services
-  if (appointment.services) {
-    appointmentForm.service_ids = appointment.services.map(s => s.service_id)
+  if (appointment) {
+    const startTime = parseISO(appointment.start_time)
+    form.id = appointment.id
+    form.client_id = appointment.client_id
+    form.barber_id = appointment.barber_id
+    form.date = format(startTime, 'yyyy-MM-dd')
+    form.time = format(startTime, 'HH:mm')
+    form.status = appointment.status
+    form.total_amount = appointment.total_amount || 0
+    form.notes = appointment.notes || ''
+    
+    // Load appointment services
+    if (appointment.services) {
+      form.service_ids = appointment.services.map(s => s.service_id)
+    }
+  } else {
+    resetForm()
   }
   
-  showAppointmentModal.value = true
+  isModalOpen.value = true
 }
 
-const closeAppointmentModal = () => {
-  showAppointmentModal.value = false
+const closeModal = () => {
+  isModalOpen.value = false
   editingAppointment.value = null
   resetForm()
 }
 
 const saveAppointment = async () => {
-  if (!appointmentForm.client_id || !appointmentForm.barber_id || !appointmentForm.date || !appointmentForm.time || appointmentForm.service_ids.length === 0) {
+  if (!form.client_id || !form.barber_id || !form.date || !form.time || form.service_ids.length === 0) {
     addToast({
       type: 'error',
       title: 'Validation Error',
@@ -279,38 +251,36 @@ const saveAppointment = async () => {
     return
   }
   
-  submitting.value = true
-  
   try {
     // Calculate duration and end time
-    const selectedServices = services.value.filter(s => appointmentForm.service_ids.includes(s.id))
+    const selectedServices = services.value.filter(s => form.service_ids.includes(s.id))
     const totalDuration = selectedServices.reduce((sum, service) => sum + service.duration_minutes, 0)
     
-    const startDateTime = new Date(`${appointmentForm.date}T${appointmentForm.time}`)
+    const startDateTime = new Date(`${form.date}T${form.time}`)
     const endDateTime = new Date(startDateTime.getTime() + totalDuration * 60000)
     
     const appointmentData = {
-      client_id: appointmentForm.client_id,
-      barber_id: appointmentForm.barber_id,
+      client_id: form.client_id,
+      barber_id: form.barber_id,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
-      status: appointmentForm.status,
-      total_amount: appointmentForm.status === 'completed' ? appointmentForm.total_amount : null,
-      notes: appointmentForm.notes || null
+      status: form.status,
+      total_amount: form.status === 'completed' ? form.total_amount : null,
+      notes: form.notes || null
     }
     
     let appointmentId: string
     
-    if (editingAppointment.value) {
+    if (form.id) {
       // Update existing appointment
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .update(appointmentData)
-        .eq('id', editingAppointment.value.id)
+        .eq('id', form.id)
       
       if (error) throw error
       
-      appointmentId = editingAppointment.value.id
+      appointmentId = form.id
       
       // Delete existing appointment services
       await supabase
@@ -348,10 +318,10 @@ const saveAppointment = async () => {
     addToast({
       type: 'success',
       title: 'Success',
-      message: `Appointment ${editingAppointment.value ? 'updated' : 'created'} successfully`
+      message: `Appointment ${form.id ? 'updated' : 'created'} successfully`
     })
     
-    closeAppointmentModal()
+    closeModal()
     await fetchAppointments()
     
   } catch (error: any) {
@@ -360,8 +330,6 @@ const saveAppointment = async () => {
       title: 'Error',
       message: error.message || 'Failed to save appointment'
     })
-  } finally {
-    submitting.value = false
   }
 }
 
@@ -435,6 +403,15 @@ const fetchServices = async () => {
   } catch (error: any) {
     console.error('Error fetching services:', error)
   }
+}
+
+const handleDateClick = (arg: { dateStr: string }) => {
+  openModal(null)
+  form.date = arg.dateStr
+}
+
+const handleEventClick = (arg: { event: any }) => {
+  openModal(arg.event.extendedProps as Appointment)
 }
 
 onMounted(async () => {

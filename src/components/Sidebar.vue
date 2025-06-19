@@ -15,6 +15,9 @@
             <p class="text-xs text-gray-500 dark:text-gray-400">Management System</p>
           </div>
         </div>
+        <button @click="$emit('toggle-sidebar')" class="lg:hidden p-2">
+          <X class="w-6 h-6 text-slate-700 dark:text-slate-200" />
+        </button>
       </div>
     </div>
 
@@ -40,7 +43,7 @@
           </router-link>
         </li>
       </ul>
-      <div class="absolute bottom-4 flex justify-center w-full">
+      <div v-if="!isMobile" class="absolute bottom-4 flex justify-center w-full">
         <button @click="$emit('toggle-sidebar')"
           class="flex-shrink-0 p-2 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full shadow-md"
           :title="props.isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
@@ -97,10 +100,15 @@ import {
   MoonIcon,
   SunIcon,
 } from '@heroicons/vue/24/outline'
-import { PanelLeftClose, PanelRightClose } from 'lucide-vue-next';
+import { PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next';
+import { useBreakpoints } from '../composables/useBreakpoints';
+import { computed } from 'vue';
 
 const route = useRoute()
 const { signOut } = useAuth()
+const { width } = useBreakpoints()
+
+const isMobile = computed(() => width.value < 1024)
 
 const props = defineProps({
   isCollapsed: Boolean,

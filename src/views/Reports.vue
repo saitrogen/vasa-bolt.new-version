@@ -1,472 +1,118 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
-    </div>
-    
-    <!-- Report Type Selector -->
-    <div class="card p-4">
-      <div class="flex items-center space-x-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Report Type:
-        </label>
-        <div class="flex space-x-2">
-          <button
-            v-for="type in reportTypes"
-            :key="type.value"
-            @click="selectedReportType = type.value as 'appointments' | 'manual' | 'expenses'"
-            :class="[
-              'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              selectedReportType === type.value
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'
-            ]"
-          >
-            {{ type.label }}
-          </button>
-        </div>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Reports</h1>
+      <div class="flex items-center gap-4">
+        <select v-model="selectedReport" class="select w-full md:w-64">
+          <option value="daily">Daily Summary</option>
+          <option value="monthly">Monthly Summary</option>
+          <option value="barber">Barber Performance</option>
+        </select>
+        <button @click="generateReport" class="btn btn-primary">Generate</button>
       </div>
     </div>
-    
+
     <!-- Filters -->
     <div class="card p-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div v-if="selectedReportType !== 'expenses'">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Barber
-          </label>
-          <select v-model="filters.barberId" class="select">
-            <option value="">All Barbers</option>
-            <option v-for="barber in barbers" :key="barber.id" :value="barber.id">
-              {{ barber.name }}
-            </option>
-          </select>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input v-model="filters.startDate" type="date" class="input" />
+            <input v-model="filters.endDate" type="date" class="input" />
+            <select v-if="selectedReport === 'barber'" v-model="filters.barberId" class="select">
+                <option value="">All Barbers</option>
+                <option v-for="barber in barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
+            </select>
         </div>
-        
-        <div v-if="selectedReportType === 'expenses'">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Category
-          </label>
-          <select v-model="filters.category" class="select">
-            <option value="">All Categories</option>
-            <option v-for="category in expenseCategories" :key="category" :value="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            From Date
-          </label>
-          <input
-            v-model="filters.fromDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            To Date
-          </label>
-          <input
-            v-model="filters.toDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div class="flex items-end">
-          <button
-            @click="generateReport"
-            class="btn btn-primary w-full"
-            :disabled="loading"
-          >
-            {{ loading ? 'Generating...' : 'Generate Report' }}
-          </button>
-        </div>
-      </div>
     </div>
-    
-    <!-- Report Results -->
-    <div v-if="reportData.length > 0" class="space-y-6">
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="card">
-          <div class="card-content">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <CurrencyDollarIcon class="h-8 w-8 text-success-600" />
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ totalAmount.toFixed(2) }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div v-if="selectedReportType === 'appointments'" class="card">
-          <div class="card-content">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <CalendarDaysIcon class="h-8 w-8 text-primary-600" />
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Appointments</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ reportData.length }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div v-if="selectedReportType !== 'expenses'" class="card">
-          <div class="card-content">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <ChartBarIcon class="h-8 w-8 text-secondary-600" />
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Average per {{ selectedReportType === 'appointments' ? 'Appointment' : 'Day' }}</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ averageAmount.toFixed(2) }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div v-if="selectedReportType === 'expenses'" class="card">
-          <div class="card-content">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <DocumentTextIcon class="h-8 w-8 text-accent-600" />
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ reportData.length }}</div>
-              </div>
-            </div>
+
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <div class="min-w-full inline-block align-middle">
+          <div class="overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <thead>
+                <tr>
+                  <th v-for="header in reportHeaders" :key="header" scope="col" class="table-header px-6 py-3 text-left">{{ header }}</th>
+                </tr>
+              </thead>
+              <tbody v-if="reportData.length > 0" class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-for="(row, index) in reportData" :key="index" class="table-row">
+                  <td v-for="(header, i) in reportHeaders" :key="i" class="table-cell px-6 py-4">
+                    {{ row[header] }}
+                  </td>
+                </tr>
+              </tbody>
+              <tbody v-else>
+                <tr>
+                  <td :colspan="reportHeaders.length" class="text-center py-12">
+                    <div class="text-slate-500 dark:text-slate-400">
+                      <p>No data to display.</p>
+                      <p class="text-sm">Select a report type and click "Generate".</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      
-      <!-- Report Table -->
-      <div class="card overflow-hidden">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-            {{ reportTypes.find(t => t.value === selectedReportType)?.label }} Report
-          </h3>
-        </div>
-        
-        <div class="overflow-x-auto">
-          <!-- Appointments Report -->
-          <table v-if="selectedReportType === 'appointments'" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Client
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Barber
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Services
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ format(parseISO(item.start_time), 'MMM d, yyyy') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.client?.name }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.barber?.name }}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.services?.map((s: any) => s.service?.name).join(', ') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                  ${{ (item.total_amount || 0).toFixed(2) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <!-- Manual Collections Report -->
-          <table v-else-if="selectedReportType === 'manual'" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Barber
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Appointments
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Notes
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ format(parseISO(item.collection_date), 'MMM d, yyyy') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.barber?.name }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                  ${{ item.total_amount_manually_entered.toFixed(2) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{ item.number_of_appointments || 'Not specified' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  {{ item.notes || 'No notes' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <!-- Expenses Report -->
-          <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Category
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Description
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Receipt
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="item in reportData" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ format(parseISO(item.expense_date), 'MMM d, yyyy') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.category }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {{ item.description }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                  ${{ item.amount.toFixed(2) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  <div v-if="item.bill_image_url" class="flex items-center">
-                    <button
-                      @click="viewReceipt(item.bill_image_url)"
-                      class="text-primary-600 hover:text-primary-900"
-                    >
-                      <DocumentIcon class="w-5 h-5" />
-                    </button>
-                  </div>
-                  <span v-else class="text-gray-400">No receipt</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Empty State -->
-    <div v-else-if="!loading && hasGeneratedReport" class="text-center py-12">
-      <ChartBarIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No data found</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        No records match your selected criteria. Try adjusting your filters.
-      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
-import { format, parseISO } from 'date-fns'
-import {
-  CurrencyDollarIcon,
-  CalendarDaysIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  DocumentIcon
-} from '@heroicons/vue/24/outline'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../composables/useToast'
-import type { Barber } from '../types'
+import { ref, reactive, computed, onMounted } from 'vue';
+import { supabase } from '../lib/supabase';
+import { format, parseISO } from 'date-fns';
+import type { Barber, Appointment, DailyCollection } from '../types';
 
-const { addToast } = useToast()
-
-const reportData = ref<any[]>([])
-const barbers = ref<Barber[]>([])
-const loading = ref(false)
-const hasGeneratedReport = ref(false)
-const selectedReportType = ref<'appointments' | 'manual' | 'expenses'>('appointments')
-
-const reportTypes = [
-  { label: 'Collections from Appointments', value: 'appointments' },
-  { label: 'Manual Collections', value: 'manual' },
-  { label: 'Expenses', value: 'expenses' }
-]
-
-const expenseCategories = [
-  'Rent',
-  'Utilities',
-  'Supplies',
-  'Equipment',
-  'Maintenance',
-  'Marketing',
-  'Insurance',
-  'Professional Services',
-  'Other'
-]
-
+const selectedReport = ref('daily');
+const reportData = ref<any[]>([]);
+const barbers = ref<Barber[]>([]);
 const filters = reactive({
-  barberId: '',
-  category: '',
-  fromDate: '',
-  toDate: ''
-})
+  startDate: '',
+  endDate: '',
+  barberId: ''
+});
 
-const totalAmount = computed(() => {
-  if (selectedReportType.value === 'appointments') {
-    return reportData.value.reduce((sum, item) => sum + (item.total_amount || 0), 0)
-  } else if (selectedReportType.value === 'manual') {
-    return reportData.value.reduce((sum, item) => sum + item.total_amount_manually_entered, 0)
-  } else {
-    return reportData.value.reduce((sum, item) => sum + item.amount, 0)
-  }
-})
-
-const averageAmount = computed(() => {
-  if (reportData.value.length === 0) return 0
-  return totalAmount.value / reportData.value.length
-})
+const reportHeaders = computed(() => {
+  if (!reportData.value.length) return ['Report Data'];
+  return Object.keys(reportData.value[0]);
+});
 
 const generateReport = async () => {
-  loading.value = true
-  hasGeneratedReport.value = true
+  let query = supabase;
+  let data: any[] | null = [];
   
-  try {
-    let query
-    let dateField
-    
-    if (selectedReportType.value === 'appointments') {
-      query = supabase
-        .from('appointments')
-        .select(`
-          *,
-          client:clients(*),
-          barber:barbers(*),
-          services:appointment_services(
-            *,
-            service:services(*)
-          )
-        `)
-        .eq('status', 'completed')
-        .not('total_amount', 'is', null)
-      
-      dateField = 'start_time'
-    } else if (selectedReportType.value === 'manual') {
-      query = supabase
-        .from('daily_collections')
-        .select(`
-          *,
-          barber:barbers(*)
-        `)
-      
-      dateField = 'collection_date'
-    } else {
-      query = supabase
-        .from('expenses')
-        .select('*')
-      
-      dateField = 'expense_date'
-    }
-    
-    // Apply filters
-    if (filters.barberId && selectedReportType.value !== 'expenses') {
-      query = query.eq('barber_id', filters.barberId)
-    }
-    
-    if (filters.category && selectedReportType.value === 'expenses') {
-      query = query.eq('category', filters.category)
-    }
-    
-    if (filters.fromDate) {
-      query = query.gte(dateField, filters.fromDate)
-    }
-    
-    if (filters.toDate) {
-      query = query.lte(dateField, filters.toDate)
-    }
-    
-    // Order by date
-    query = query.order(dateField, { ascending: false })
-    
-    const { data, error } = await query
-    
-    if (error) throw error
-    
-    reportData.value = data || []
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to generate report'
-    })
-  } finally {
-    loading.value = false
+  if (selectedReport.value === 'daily') {
+      const { data: dailyData, error } = await supabase.rpc('get_daily_summary', {
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined
+      });
+      if (!error) data = dailyData;
+  } else if (selectedReport.value === 'monthly') {
+      const { data: monthlyData, error } = await supabase.rpc('get_monthly_summary', {
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined
+      });
+      if (!error) data = monthlyData;
+  } else if (selectedReport.value === 'barber') {
+      const { data: barberData, error } = await supabase.rpc('get_barber_performance', {
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined,
+          barber_id_param: filters.barberId || undefined
+      });
+      if (!error) data = barberData;
   }
-}
-
-const viewReceipt = (url: string) => {
-  window.open(url, '_blank')
-}
+  
+  reportData.value = data || [];
+};
 
 const fetchBarbers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('barbers')
-      .select('*')
-      .order('name')
-    
-    if (error) throw error
-    
-    barbers.value = data || []
-  } catch (error: any) {
-    console.error('Error fetching barbers:', error)
-  }
-}
+  const { data, error } = await supabase.from('barbers').select('*');
+  if (!error) barbers.value = data;
+};
 
-onMounted(async () => {
-  await fetchBarbers()
-})
+onMounted(() => {
+  fetchBarbers();
+});
 </script>

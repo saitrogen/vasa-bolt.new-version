@@ -1,61 +1,22 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Expenses</h1>
-      <button
-        @click="openNewExpenseModal"
-        class="btn btn-primary"
-      >
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Add Expense
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Expenses</h1>
+      <button @click="openNewExpenseModal" class="btn btn-primary">
+        <PlusIcon class="w-4 h-4 md:mr-2" />
+        <span class="hidden md:inline">Add Expense</span>
       </button>
     </div>
     
     <!-- Filters -->
     <div class="card p-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Category
-          </label>
-          <select v-model="filters.category" class="select">
-            <option value="">All Categories</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            From Date
-          </label>
-          <input
-            v-model="filters.fromDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            To Date
-          </label>
-          <input
-            v-model="filters.toDate"
-            type="date"
-            class="input"
-          />
-        </div>
-        
-        <div class="flex items-end">
-          <button
-            @click="clearFilters"
-            class="btn btn-outline w-full"
-          >
-            Clear Filters
-          </button>
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input v-model="filters.startDate" type="date" class="input" />
+        <input v-model="filters.endDate" type="date" class="input" />
+        <select v-model="filters.category" class="select">
+          <option value="">All Categories</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
       </div>
       
       <div class="mt-4 flex items-center justify-between">
@@ -71,79 +32,32 @@
     <!-- Expenses Table -->
     <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700/50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Category
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Description
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Amount
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Receipt
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr
-              v-for="expense in paginatedExpenses"
-              :key="expense.id"
-              class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                {{ format(parseISO(expense.expense_date), 'MMM d, yyyy') }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="badge badge-default">
-                  {{ expense.category }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                <div class="max-w-xs truncate">{{ expense.description }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                ${{ expense.amount.toFixed(2) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <div v-if="expense.bill_image_url" class="flex items-center">
-                  <button
-                    @click="viewReceipt(expense.bill_image_url)"
-                    class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                  >
-                    <DocumentIcon class="w-5 h-5" />
-                  </button>
-                </div>
-                <span v-else class="text-gray-400">No receipt</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex items-center justify-end space-x-2">
-                  <button
-                    @click="editExpense(expense)"
-                    class="text-secondary-600 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-secondary-300"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    @click="deleteExpense(expense)"
-                    class="text-error-600 hover:text-error-900 dark:text-error-400 dark:hover:text-error-300"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="min-w-full inline-block align-middle">
+          <div class="overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <thead>
+                <tr>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Date</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Description</th>
+                  <th scope="col" class="table-header px-6 py-3 text-left">Category</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right">Amount</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-for="expense in filteredExpenses" :key="expense.id" class="table-row">
+                  <td class="table-cell px-6 py-4">{{ formatDate(expense.expense_date) }}</td>
+                  <td class="table-cell px-6 py-4 font-medium">{{ expense.description }}</td>
+                  <td class="table-cell px-6 py-4">{{ expense.category }}</td>
+                  <td class="table-cell px-6 py-4 text-right">${{ expense.amount.toFixed(2) }}</td>
+                  <td class="table-cell px-6 py-4 text-right">
+                    <button @click="editExpense(expense)" class="btn btn-ghost">Edit</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       
       <!-- Pagination -->
@@ -355,12 +269,12 @@ const categories = [
 
 const filters = reactive({
   category: '',
-  fromDate: '',
-  toDate: ''
+  startDate: '',
+  endDate: ''
 })
 
 const expenseForm = reactive({
-  expense_date: '',
+  expense_date: new Date().toISOString().substring(0, 10),
   category: '',
   description: '',
   amount: 0,
@@ -374,12 +288,12 @@ const filteredExpenses = computed(() => {
     filtered = filtered.filter(expense => expense.category === filters.category)
   }
   
-  if (filters.fromDate) {
-    filtered = filtered.filter(expense => expense.expense_date >= filters.fromDate)
+  if (filters.startDate) {
+    filtered = filtered.filter(expense => expense.expense_date >= filters.startDate)
   }
   
-  if (filters.toDate) {
-    filtered = filtered.filter(expense => expense.expense_date <= filters.toDate)
+  if (filters.endDate) {
+    filtered = filtered.filter(expense => expense.expense_date <= filters.endDate)
   }
   
   return filtered.sort((a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime())
@@ -417,40 +331,42 @@ const displayedPages = computed(() => {
   return pages
 })
 
+const formatDate = (date: string) => {
+  return format(parseISO(date), 'MMM d, yyyy')
+}
+
 const resetForm = () => {
   Object.assign(expenseForm, {
-    expense_date: format(new Date(), 'yyyy-MM-dd'),
+    expense_date: new Date().toISOString().substring(0, 10),
     category: '',
     description: '',
     amount: 0,
-    bill_image_url: ''
+    bill_image_url: '',
+    is_active: true
   })
-}
-
-const clearFilters = () => {
-  Object.assign(filters, {
-    category: '',
-    fromDate: '',
-    toDate: ''
-  })
-  currentPage.value = 1
 }
 
 const openNewExpenseModal = () => {
-  editingExpense.value = null
-  resetForm()
-  showExpenseModal.value = true
+  openModal(null);
 }
 
 const editExpense = (expense: Expense) => {
+  openModal(expense);
+}
+
+const openModal = (expense: Expense | null) => {
   editingExpense.value = expense
-  Object.assign(expenseForm, {
-    expense_date: expense.expense_date,
-    category: expense.category,
-    description: expense.description,
-    amount: expense.amount,
-    bill_image_url: expense.bill_image_url || ''
-  })
+  if (expense) {
+    Object.assign(expenseForm, {
+      expense_date: expense.expense_date,
+      category: expense.category,
+      description: expense.description,
+      amount: expense.amount,
+      bill_image_url: expense.bill_image_url || ''
+    })
+  } else {
+    resetForm()
+  }
   showExpenseModal.value = true
 }
 

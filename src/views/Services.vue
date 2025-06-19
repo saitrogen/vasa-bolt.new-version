@@ -1,93 +1,44 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
-      <button
-        @click="openNewServiceModal"
-        class="btn btn-primary"
-      >
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Add Service
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Services</h1>
+      <button @click="openNewServiceModal" class="btn btn-primary">
+        <PlusIcon class="w-4 h-4 md:mr-2" />
+        <span class="hidden md:inline">Add Service</span>
       </button>
     </div>
     
     <!-- Services Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div
         v-for="service in services"
         :key="service.id"
         :class="[
-          'card hover:shadow-md transition-shadow cursor-pointer',
+          'card flex flex-col',
           !service.is_active && 'opacity-60'
         ]"
       >
-        <div class="card-content">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                {{ service.name }}
-              </h3>
-              <p v-if="service.description" class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {{ service.description }}
-              </p>
-              <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                <div class="flex items-center">
-                  <CurrencyDollarIcon class="w-4 h-4 mr-1" />
-                  ${{ service.price }}
-                </div>
-                <div class="flex items-center">
-                  <ClockIcon class="w-4 h-4 mr-1" />
-                  {{ service.duration_minutes }}min
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-2">
-              <div :class="[
-                'w-3 h-3 rounded-full',
-                service.is_active ? 'bg-success-500' : 'bg-gray-300 dark:bg-gray-600'
-              ]"></div>
-              <Menu as="div" class="relative">
-                <MenuButton class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  <EllipsisVerticalIcon class="w-5 h-5" />
-                </MenuButton>
-                <transition
-                  enter-active-class="transition duration-100 ease-out"
-                  enter-from-class="transform scale-95 opacity-0"
-                  enter-to-class="transform scale-100 opacity-100"
-                  leave-active-class="transition duration-75 ease-in"
-                  leave-from-class="transform scale-100 opacity-100"
-                  leave-to-class="transform scale-95 opacity-0"
-                >
-                  <MenuItems class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                    <div class="py-1">
-                      <MenuItem v-slot="{ active }">
-                        <button
-                          @click="editService(service)"
-                          :class="[
-                            active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
-                            'block w-full text-left px-4 py-2 text-sm'
-                          ]"
-                        >
-                          Edit Service
-                        </button>
-                      </MenuItem>
-                      <MenuItem v-slot="{ active }">
-                        <button
-                          @click="toggleServiceStatus(service)"
-                          :class="[
-                            active ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300',
-                            'block w-full text-left px-4 py-2 text-sm'
-                          ]"
-                        >
-                          {{ service.is_active ? 'Deactivate' : 'Activate' }}
-                        </button>
-                      </MenuItem>
-                    </div>
-                  </MenuItems>
-                </transition>
-              </Menu>
-            </div>
+        <div class="p-6 flex-grow">
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {{ service.name }}
+          </h3>
+          <p v-if="service.description" class="text-slate-500 dark:text-slate-400 mt-1 min-h-[40px]">
+            {{ service.description }}
+          </p>
+          <div class="flex items-baseline mt-4">
+            <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+              ${{ service.price }}
+            </span>
+            <span class="text-sm text-slate-500 dark:text-slate-400 ml-1">/ {{ service.duration_minutes }} min</span>
           </div>
+        </div>
+        <div class="card-footer bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-200/80 dark:border-slate-800 flex justify-end gap-2">
+          <button
+            @click="editService(service)"
+            class="btn btn-secondary"
+          >
+            Edit
+          </button>
         </div>
       </div>
       
@@ -252,20 +203,26 @@ const resetForm = () => {
 }
 
 const openNewServiceModal = () => {
-  editingService.value = null
-  resetForm()
-  showServiceModal.value = true
+  openModal(null);
 }
 
 const editService = (service: Service) => {
+  openModal(service);
+}
+
+const openModal = (service: Service | null) => {
   editingService.value = service
-  Object.assign(serviceForm, {
-    name: service.name,
-    price: service.price,
-    duration_minutes: service.duration_minutes,
-    description: service.description || '',
-    is_active: service.is_active
-  })
+  if (service) {
+    Object.assign(serviceForm, {
+      name: service.name,
+      price: service.price,
+      duration_minutes: service.duration_minutes,
+      description: service.description || '',
+      is_active: service.is_active
+    })
+  } else {
+    resetForm()
+  }
   showServiceModal.value = true
 }
 
