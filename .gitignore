@@ -25,4 +25,4 @@ dist-ssr
 .env
 .env.production
 userinput.py
-.cursor/rules/rules.mdc
+.cursor/

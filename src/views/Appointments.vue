@@ -107,6 +107,7 @@
                 :value="service.id"
                 v-model="form.service_ids"
                 class="checkbox"
+                
               />
               <span :class="['font-medium', form.service_ids.includes(service.id) ? 'text-primary-800 dark:text-primary-200' : 'text-slate-800 dark:text-slate-200']">{{ service.name }}</span>
               <span class="ml-auto text-sm" :class="[form.service_ids.includes(service.id) ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400']">${{ service.price }}</span>
