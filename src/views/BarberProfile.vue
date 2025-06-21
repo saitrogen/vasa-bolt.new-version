@@ -45,26 +45,32 @@
       </div>
       <div class="flex flex-col justify-between p-6 md:w-32 md:border-l border-slate-200/80 dark:border-slate-800 items-end md:items-center">
         <button v-if="!editMode" @click="editMode = true" class="btn btn-secondary mt-2 md:mt-0">Edit</button>
-        <div v-else class="flex gap-2 mt-2 md:mt-0">
+        <div v-else class="flex flex-wrap justify-end md:justify-center gap-2 mt-2 md:mt-0">
           <button @click="save" class="btn btn-primary">Save</button>
           <button @click="cancel" class="btn btn-outline">Cancel</button>
         </div>
       </div>
     </div>
 
-    <!-- Visa & Passport Section (Placeholders) -->
+    <!-- Visa & Passport Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="card card-content">
-        <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Visa Number</div>
-        <div class="text-slate-900 dark:text-slate-100 mb-4">—</div>
-        <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Visa Expiry</div>
-        <div class="text-slate-900 dark:text-slate-100">—</div>
+        <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Visa Number</label>
+        <input v-if="editMode" v-model="form.visa_number" class="input" />
+        <div v-else class="text-slate-900 dark:text-slate-100 mb-4">{{ barber?.visa_number || '—' }}</div>
+        
+        <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Visa Expiry</label>
+        <input v-if="editMode" v-model="form.visa_expiry_date" type="date" class="input" />
+        <div v-else class="text-slate-900 dark:text-slate-100">{{ barber?.visa_expiry_date || '—' }}</div>
       </div>
       <div class="card card-content">
-        <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Passport Number</div>
-        <div class="text-slate-900 dark:text-slate-100 mb-4">—</div>
-        <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Visa Expiry</div>
-        <div class="text-slate-900 dark:text-slate-100">—</div>
+        <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Passport Number</label>
+        <input v-if="editMode" v-model="form.passport_number" class="input" />
+        <div v-else class="text-slate-900 dark:text-slate-100 mb-4">{{ barber?.passport_number || '—' }}</div>
+
+        <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Passport Expiry</label>
+        <input v-if="editMode" v-model="form.passport_expiry_date" type="date" class="input" />
+        <div v-else class="text-slate-900 dark:text-slate-100">{{ barber?.passport_expiry_date || '—' }}</div>
       </div>
     </div>
 
@@ -84,55 +90,69 @@
       </div>
     </div>
 
-    <!-- Appointments Table -->
-    <div class="card card-content">
-      <div class="flex gap-4 mb-4">
-        <button :class="tabClass('previous')" @click="appointmentsTab = 'previous'">Previous</button>
-        <button :class="tabClass('today')" @click="appointmentsTab = 'today'">Today</button>
-        <button :class="tabClass('upcoming')" @click="appointmentsTab = 'upcoming'">Upcoming</button>
+    <!-- Appointments and Collections -->
+    <div class="card">
+      <div class="flex border-b border-slate-200 dark:border-slate-700">
+        <button :class="mainTabClass('appointments')" @click="mainTab = 'appointments'">Appointments</button>
+        <button :class="mainTabClass('collections')" @click="mainTab = 'collections'">Collection</button>
       </div>
-      <table class="w-full text-left">
-        <thead>
-          <tr class="table-header">
-            <th class="py-2">Date</th>
-            <th class="py-2">Start Time</th>
-            <th class="py-2">End Time</th>
-            <th class="py-2">Client</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="appt in filteredAppointments" :key="appt.id" class="table-row">
-            <td class="table-cell">{{ formatDate(appt.start_time) }}</td>
-            <td class="table-cell">{{ formatTime(appt.start_time) }}</td>
-            <td class="table-cell">{{ formatTime(appt.end_time) }}</td>
-            <td class="table-cell">{{ appt.client?.name || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!-- Collection Table (Today) -->
-    <div class="card card-content">
-      <div class="flex gap-4 mb-4">
-        <button class="tab-active">Today</button>
-        <!-- Add more tabs if needed -->
+      <!-- Appointments Table -->
+      <div v-if="mainTab === 'appointments'" class="p-6">
+        <div class="flex gap-4 mb-4">
+          <button :class="tabClass('previous')" @click="appointmentsTab = 'previous'">Previous</button>
+          <button :class="tabClass('today')" @click="appointmentsTab = 'today'">Today</button>
+          <button :class="tabClass('upcoming')" @click="appointmentsTab = 'upcoming'">Upcoming</button>
+        </div>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-500 dark:text-slate-400">
+              <th class="py-3 font-medium">Date</th>
+              <th class="py-3 font-medium">Start Time</th>
+              <th class="py-3 font-medium">End Time</th>
+              <th class="py-3 font-medium">Client</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="appt in filteredAppointments" :key="appt.id" class="border-b border-slate-200/80 dark:border-slate-700/80">
+              <td class="py-3">{{ formatDate(appt.start_time) }}</td>
+              <td class="py-3">{{ formatTime(appt.start_time) }}</td>
+              <td class="py-3">{{ formatTime(appt.end_time) }}</td>
+              <td class="py-3">{{ appt.client?.name || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table class="w-full text-left">
-        <thead>
-          <tr class="table-header">
-            <th class="py-2">Date</th>
-            <th class="py-2">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="col in todayCollections" :key="col.id" class="table-row">
-            <td class="table-cell">{{ formatDate(col.collection_date) }}</td>
-            <td class="table-cell text-green-600 dark:text-green-500 font-bold">${{ col.total_amount_manually_entered.toFixed(2) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      
+      <!-- Collections Table -->
+      <div v-if="mainTab === 'collections'" class="p-6">
+        <div class="flex gap-4 mb-4">
+          <button :class="tabClass('today')">Today</button>
+        </div>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-500 dark:text-slate-400">
+              <th class="py-3 font-medium">Date</th>
+              <th class="py-3 font-medium">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="col in todayCollections" :key="col.id" class="border-b border-slate-200/80 dark:border-slate-700/80">
+              <td class="py-3">{{ formatDate(col.collection_date) }}</td>
+              <td class="py-3 text-green-600 dark:text-green-500 font-semibold">${{ col.total_amount_manually_entered.toFixed(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
+  <Modal :is-open="isConfirmModalOpen" @close="isConfirmModalOpen = false" title="Confirm Save">
+    <p class="text-slate-500 dark:text-slate-400">Are you sure you want to save these changes?</p>
+    <div class="mt-6 flex justify-end gap-4">
+      <button @click="isConfirmModalOpen = false" class="btn btn-outline">Cancel</button>
+      <button @click="confirmSave" class="btn btn-primary">Save Changes</button>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -140,6 +160,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase'
 import type { Barber, Appointment, DailyCollection } from '../types'
+import Modal from '../components/Modal.vue'
+import { useToast } from '../composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -148,11 +170,15 @@ const barberId = route.params.id as string
 const barber = ref<Barber | null>(null)
 const editMode = ref(false)
 const form = ref<any>({})
+const isConfirmModalOpen = ref(false)
+
+const { addToast } = useToast()
 
 const appointments = ref<Appointment[]>([])
 const todayCollections = ref<DailyCollection[]>([])
 const stats = ref({ todayAppointments: 0, todayCollection: 0, monthlyCollection: 0 })
 const appointmentsTab = ref<'previous' | 'today' | 'upcoming'>('today')
+const mainTab = ref<'appointments' | 'collections'>('appointments')
 
 const fetchBarber = async () => {
   const { data, error } = await supabase
@@ -196,14 +222,36 @@ const fetchCollections = async () => {
   }
 }
 
-const save = async () => {
+const save = () => {
+  isConfirmModalOpen.value = true
+}
+
+const confirmSave = async () => {
+  const updates = {
+    name: form.value.name,
+    phone_number_work: form.value.phone_number_work,
+    phone_number_home: form.value.phone_number_home,
+    email: form.value.email,
+    home_address: form.value.home_address,
+    visa_number: form.value.visa_number,
+    visa_expiry_date: form.value.visa_expiry_date,
+    passport_number: form.value.passport_number,
+    passport_expiry_date: form.value.passport_expiry_date,
+  }
   const { error } = await supabase
     .from('barbers')
-    .update(form.value)
+    .update(updates)
     .eq('id', barberId)
+  
+  isConfirmModalOpen.value = false
+
   if (!error) {
+    addToast({ title: 'Success', message: 'Barber profile saved.', type: 'success' })
     editMode.value = false
     fetchBarber()
+  } else {
+    addToast({ title: 'Error', message: 'Failed to save barber profile.', type: 'error' })
+    console.error('Error updating barber:', error)
   }
 }
 
@@ -212,10 +260,21 @@ const cancel = () => {
   editMode.value = false
 }
 
-const tabClass = (tab: string) =>
-  appointmentsTab.value === tab
-    ? 'tab-active'
-    : 'tab-inactive'
+const mainTabClass = (tab: string) => {
+  const base = 'px-4 py-3 text-sm font-medium focus:outline-none'
+  if (mainTab.value === tab) {
+    return `${base} text-slate-900 dark:text-slate-100 border-b-2 border-primary-500`
+  }
+  return `${base} text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200`
+}
+
+const tabClass = (tab: string) => {
+  const base = 'px-3 py-1 text-sm font-medium rounded-lg'
+  if (appointmentsTab.value === tab) {
+    return `${base} bg-slate-200/50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100`
+  }
+  return `${base} text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50`
+}
 
 const filteredAppointments = computed(() => {
   const today = new Date().toISOString().slice(0, 10)
@@ -255,11 +314,5 @@ onMounted(() => {
 }
 .btn-secondary {
   @apply bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition;
-}
-.tab-active {
-  @apply px-4 py-2 rounded-t-lg bg-slate-100 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 font-semibold shadow;
-}
-.tab-inactive {
-  @apply px-4 py-2 rounded-t-lg bg-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition;
 }
 </style> 
