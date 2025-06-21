@@ -24,6 +24,18 @@
     
     <!-- Filters -->
     <div class="card p-4">
+      <!-- Quick Range Buttons -->
+      <div class="mb-4">
+        <div class="flex flex-wrap gap-2">
+          <button @click="setDateRange('today')" class="btn btn-outline btn-sm">Today</button>
+          <button @click="setDateRange('thisWeek')" class="btn btn-outline btn-sm">This Week</button>
+          <button @click="setDateRange('thisMonth')" class="btn btn-outline btn-sm">This Month</button>
+          <button @click="setDateRange('previousMonth')" class="btn btn-outline btn-sm">Previous Month</button>
+          <button @click="clearDateRange()" class="btn btn-ghost btn-sm">Clear</button>
+        </div>
+      </div>
+      
+      <!-- Date Filters -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input v-model="filters.startDate" type="date" class="input" />
         <input v-model="filters.endDate" type="date" class="input" />
@@ -102,7 +114,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { supabase } from '../lib/supabase';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
 import { PlusIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
@@ -242,6 +254,42 @@ const fetchBarbers = async () => {
 const fetchAppointments = async () => {
   const { data, error } = await supabase.from('appointments').select('*');
   if (!error) appointments.value = data;
+};
+
+const setDateRange = (range: string) => {
+  const today = new Date();
+  let startDate: Date;
+  let endDate: Date;
+
+  switch (range) {
+    case 'today':
+      startDate = startOfDay(today);
+      endDate = endOfDay(today);
+      break;
+    case 'thisWeek':
+      startDate = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+      endDate = endOfWeek(today, { weekStartsOn: 1 });
+      break;
+    case 'thisMonth':
+      startDate = startOfMonth(today);
+      endDate = endOfMonth(today);
+      break;
+    case 'previousMonth':
+      const lastMonth = subMonths(today, 1);
+      startDate = startOfMonth(lastMonth);
+      endDate = endOfMonth(lastMonth);
+      break;
+    default:
+      return;
+  }
+
+  filters.startDate = format(startDate, 'yyyy-MM-dd');
+  filters.endDate = format(endDate, 'yyyy-MM-dd');
+};
+
+const clearDateRange = () => {
+  filters.startDate = '';
+  filters.endDate = '';
 };
 
 onMounted(async () => {
