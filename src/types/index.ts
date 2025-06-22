@@ -30,6 +30,10 @@ export interface Barber {
   is_active: boolean
   created_at: string
   updated_at: string
+  visa_number: string | null
+  visa_expiry_date: string | null
+  passport_number: string | null
+  passport_expiry_date: string | null
 }
 
 export interface BarberSchedule {

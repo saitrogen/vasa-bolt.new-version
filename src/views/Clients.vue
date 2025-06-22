@@ -49,7 +49,7 @@
                 </div>
               </td>
             </tr>
-            <tr v-for="client in paginatedClients" :key="client.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" @click="viewClientHistory(client)">
+            <tr v-for="client in paginatedClients" :key="client.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" @click="goToClientProfile(client)">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10">
@@ -257,8 +257,10 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../composables/useToast'
 import Modal from '../components/Modal.vue'
 import type { Client, Appointment } from '../types'
+import { useRouter } from 'vue-router'
 
 const { addToast } = useToast()
+const router = useRouter()
 
 const clients = ref<Client[]>([])
 const appointments = ref<Appointment[]>([])
@@ -494,6 +496,10 @@ const fetchAppointments = async () => {
   } catch (error: any) {
     console.error('Error fetching appointments:', error)
   }
+}
+
+const goToClientProfile = (client: any) => {
+  router.push({ name: 'ClientProfile', params: { id: client.id } })
 }
 
 watch(searchQuery, () => {
