@@ -424,10 +424,10 @@ const generatePDF = () => {
     columnStyles: {
       0: { halign: 'left' }
     },
-    didDrawPage: (data) => {
-      // For multi-page tables, you might want a footer on each page
-      // This example just adds a total row at the very end.
-    }
+    // didDrawPage: (data) => {
+    //   // For multi-page tables, you might want a footer on each page
+    //   // This example just adds a total row at the very end.
+    // }
   });
   
   pdfSrc.value = doc.output('datauristring');

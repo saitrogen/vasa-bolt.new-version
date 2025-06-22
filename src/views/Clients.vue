@@ -391,10 +391,10 @@ const closeClientModal = () => {
   resetForm()
 }
 
-const viewClientHistory = (client: Client) => {
-  selectedClient.value = client
-  showHistoryModal.value = true
-}
+// const viewClientHistory = (client: Client) => {
+//   selectedClient.value = client
+//   showHistoryModal.value = true
+// }
 
 const closeHistoryModal = () => {
   showHistoryModal.value = false
