@@ -2,10 +2,16 @@
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Daily Collections</h1>
-      <button @click="openModal(null)" class="btn btn-primary">
-        <PlusIcon class="w-4 h-4 md:mr-2" />
-        <span class="hidden md:inline">Add Collection</span>
-      </button>
+      <div class="flex gap-2">
+        <button @click="generatePDF" class="btn btn-outline">
+          <ArrowDownTrayIcon class="w-4 h-4 md:mr-2" />
+          <span class="hidden md:inline">Download PDF</span>
+        </button>
+        <button @click="openModal(null)" class="btn btn-primary">
+          <PlusIcon class="w-4 h-4 md:mr-2" />
+          <span class="hidden md:inline">Add Collection</span>
+        </button>
+      </div>
     </div>
     
     <!-- Info Banner -->
@@ -24,6 +30,18 @@
     
     <!-- Filters -->
     <div class="card p-4">
+      <!-- Quick Range Buttons -->
+      <div class="mb-4">
+        <div class="flex flex-wrap gap-2">
+          <button @click="setDateRange('today')" class="btn btn-outline btn-sm">Today</button>
+          <button @click="setDateRange('thisWeek')" class="btn btn-outline btn-sm">This Week</button>
+          <button @click="setDateRange('thisMonth')" class="btn btn-outline btn-sm">This Month</button>
+          <button @click="setDateRange('previousMonth')" class="btn btn-outline btn-sm">Previous Month</button>
+          <button @click="clearDateRange()" class="btn btn-ghost btn-sm">Clear</button>
+        </div>
+      </div>
+      
+      <!-- Date Filters -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input v-model="filters.startDate" type="date" class="input" />
         <input v-model="filters.endDate" type="date" class="input" />
@@ -43,6 +61,7 @@
                 <tr>
                   <th scope="col" class="table-header px-6 py-3 text-left">Date</th>
                   <th scope="col" class="table-header px-6 py-3 text-left">Barber</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right"># Appointments</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Calculated Amount</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Manual Amount</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Difference</th>
@@ -53,8 +72,9 @@
                 <tr v-for="collection in filteredCollections" :key="collection.id" class="table-row">
                   <td class="table-cell px-6 py-4">{{ formatDate(collection.collection_date) }}</td>
                   <td class="table-cell px-6 py-4 font-medium">{{ collection.barber?.name || 'N/A' }}</td>
+                  <td class="table-cell px-6 py-4 text-right">{{ collection.number_of_appointments ?? 0 }}</td>
                   <td class="table-cell px-6 py-4 text-right">${{ collection.total_amount_calculated?.toFixed(2) ?? '0.00' }}</td>
-                  <td class="table-cell px-6 py-4 text-right">${{ collection.total_amount_manually_entered.toFixed(2) }}</td>
+                  <td class="table-cell px-6 py-4 text-right">${{ collection.total_amount_manually_entered?.toFixed(2) ?? '0.00' }}</td>
                   <td class="table-cell px-6 py-4 text-right" :class="getDifferenceClass(collection.total_amount_calculated, collection.total_amount_manually_entered)">
                     ${{ getDifference(collection.total_amount_calculated, collection.total_amount_manually_entered) }}
                   </td>
@@ -84,7 +104,11 @@
         </div>
         <div>
           <label class="block text-sm font-medium">Manual Amount</label>
-          <input v-model.number="form.total_amount_manually_entered" type="number" step="0.01" required class="input" />
+          <input v-model.number="form.total_amount_manually_entered" type="number" step="0.01" required class="input" placeholder="eg. 1230.00"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Number of Appointments</label>
+          <input v-model.number="form.number_of_appointments" type="number" step="1" required class="input" placeholder="eg. 10.."/>
         </div>
         <div>
           <label class="block text-sm font-medium">Notes</label>
@@ -102,10 +126,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { supabase } from '../lib/supabase';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
-import { PlusIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, InformationCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import type { DailyCollection, Barber, Appointment } from '../types';
 
 type DailyCollectionWithRelations = DailyCollection & {
@@ -132,7 +158,8 @@ const form = reactive({
   id: null as string | null,
   collection_date: new Date().toISOString().substring(0, 10),
   barber_id: '',
-  total_amount_manually_entered: 0,
+  total_amount_manually_entered: null as number | null,
+  number_of_appointments: null as number | null,
   notes: ''
 });
 
@@ -173,12 +200,14 @@ const openModal = (collection: DailyCollectionWithRelations | null) => {
     form.collection_date = collection.collection_date;
     form.barber_id = collection.barber_id;
     form.total_amount_manually_entered = collection.total_amount_manually_entered;
+    form.number_of_appointments = collection.number_of_appointments || null;
     form.notes = collection.notes || '';
   } else {
     form.id = null;
     form.collection_date = new Date().toISOString().substring(0, 10);
     form.barber_id = '';
-    form.total_amount_manually_entered = 0;
+    form.total_amount_manually_entered = null;
+    form.number_of_appointments = null;
     form.notes = '';
   }
   isModalOpen.value = true;
@@ -189,10 +218,20 @@ const closeModal = () => {
 };
 
 const saveCollection = async () => {
+  if (form.total_amount_manually_entered == null || form.total_amount_manually_entered <= 0) {
+    addToast({ type: 'error', title: 'Invalid Input', message: 'Manual Amount must be a positive number.' });
+    return;
+  }
+  if (form.number_of_appointments == null || form.number_of_appointments <= 0) {
+    addToast({ type: 'error', title: 'Invalid Input', message: 'Number of Appointments must be a positive number.' });
+    return;
+  }
+
   const dataToSave = {
     collection_date: form.collection_date,
     barber_id: form.barber_id,
     total_amount_manually_entered: form.total_amount_manually_entered,
+    number_of_appointments: form.number_of_appointments,
     notes: form.notes
   };
 
@@ -242,6 +281,91 @@ const fetchBarbers = async () => {
 const fetchAppointments = async () => {
   const { data, error } = await supabase.from('appointments').select('*');
   if (!error) appointments.value = data;
+};
+
+const setDateRange = (range: string) => {
+  const today = new Date();
+  let startDate: Date;
+  let endDate: Date;
+
+  switch (range) {
+    case 'today':
+      startDate = startOfDay(today);
+      endDate = endOfDay(today);
+      break;
+    case 'thisWeek':
+      startDate = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+      endDate = endOfWeek(today, { weekStartsOn: 1 });
+      break;
+    case 'thisMonth':
+      startDate = startOfMonth(today);
+      endDate = endOfMonth(today);
+      break;
+    case 'previousMonth':
+      const lastMonth = subMonths(today, 1);
+      startDate = startOfMonth(lastMonth);
+      endDate = endOfMonth(lastMonth);
+      break;
+    default:
+      return;
+  }
+
+  filters.startDate = format(startDate, 'yyyy-MM-dd');
+  filters.endDate = format(endDate, 'yyyy-MM-dd');
+};
+
+const clearDateRange = () => {
+  filters.startDate = '';
+  filters.endDate = '';
+};
+
+const generatePDF = () => {
+  const doc = new jsPDF();
+  const tableData = filteredCollections.value;
+
+  doc.setFontSize(18);
+  doc.text('Daily Collections Report', 14, 22);
+  doc.setFontSize(11);
+  doc.setTextColor(100);
+
+  const dateRange = `Period: ${filters.startDate || 'Start'} to ${filters.endDate || 'End'}`;
+  doc.text(dateRange, 14, 30);
+  
+  const barberFilter = filters.barberId ? barbers.value.find(b => b.id === filters.barberId)?.name : 'All Barbers';
+  doc.text(`Barber: ${barberFilter}`, 14, 36);
+
+  const head = [['Date', 'Barber', '# Appts', 'Calc. Amount', 'Manual Amount', 'Difference']];
+  const body = tableData.map(row => [
+    formatDate(row.collection_date),
+    row.barber?.name || 'N/A',
+    row.number_of_appointments ?? 0,
+    `$${row.total_amount_calculated?.toFixed(2) ?? '0.00'}`,
+    `$${row.total_amount_manually_entered?.toFixed(2) ?? '0.00'}`,
+    `$${getDifference(row.total_amount_calculated, row.total_amount_manually_entered)}`
+  ]);
+
+  autoTable(doc, {
+    head: head,
+    body: body,
+    startY: 42,
+    headStyles: { fillColor: [22, 163, 74] }, // Green-600
+    didDrawPage: (data) => {
+      // Totals
+      const totalManual = tableData.reduce((sum, row) => sum + (row.total_amount_manually_entered || 0), 0);
+      const totalCalculated = tableData.reduce((sum, row) => sum + (row.total_amount_calculated || 0), 0);
+      const totalAppointments = tableData.reduce((sum, row) => sum + (row.number_of_appointments || 0), 0);
+
+      const finalY = (data.cursor as { y: number }).y;
+      doc.setFontSize(12);
+      doc.text('Totals', 14, finalY + 15);
+      doc.setFontSize(10);
+      doc.text(`Total Manual Amount: $${totalManual.toFixed(2)}`, 14, finalY + 22);
+      doc.text(`Total Calculated Amount: $${totalCalculated.toFixed(2)}`, 14, finalY + 28);
+      doc.text(`Total Appointments: ${totalAppointments}`, 14, finalY + 34);
+    }
+  });
+
+  doc.save(`vasa-saloon-collections-${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 onMounted(async () => {
