@@ -1,5 +1,12 @@
 <template>
-  <div class="flex h-screen bg-slate-50 dark:bg-slate-900">
+  <!-- Login page - Full screen layout -->
+  <div v-if="$route.name === 'Login'" class="min-h-screen">
+    <router-view />
+    <Toast />
+  </div>
+  
+  <!-- Main application layout with sidebar -->
+  <div v-else class="flex h-screen bg-slate-50 dark:bg-slate-900">
     <!-- Desktop Sidebar -->
     <Sidebar
       v-if="!isMobile"
