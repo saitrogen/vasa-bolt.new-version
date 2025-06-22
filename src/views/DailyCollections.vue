@@ -120,6 +120,16 @@
         </div>
       </form>
     </Modal>
+
+    <Modal :is-open="isPdfPreviewOpen" title="PDF Preview" @close="closePdfPreview" size="xl">
+      <div class="w-full h-[75vh]">
+        <iframe v-if="pdfSrc" :src="pdfSrc" class="w-full h-full border-0" title="PDF Preview"></iframe>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" @click="closePdfPreview" class="btn btn-outline">Close</button>
+        <a :href="pdfSrc" :download="`vasa-saloon-collections-${new Date().toISOString().slice(0, 10)}.pdf`" class="btn btn-primary">Download PDF</a>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -147,6 +157,8 @@ const appointments = ref<Appointment[]>([]);
 const loading = ref(true);
 const isModalOpen = ref(false);
 const editingCollection = ref<DailyCollectionWithRelations | null>(null);
+const isPdfPreviewOpen = ref(false);
+const pdfSrc = ref('');
 
 const filters = reactive({
   startDate: '',
@@ -215,6 +227,11 @@ const openModal = (collection: DailyCollectionWithRelations | null) => {
 
 const closeModal = () => {
   isModalOpen.value = false;
+};
+
+const closePdfPreview = () => {
+  isPdfPreviewOpen.value = false;
+  pdfSrc.value = ''; // Clear src to release memory
 };
 
 const saveCollection = async () => {
@@ -320,52 +337,101 @@ const clearDateRange = () => {
 };
 
 const generatePDF = () => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: 'landscape' });
   const tableData = filteredCollections.value;
 
-  doc.setFontSize(18);
-  doc.text('Daily Collections Report', 14, 22);
-  doc.setFontSize(11);
-  doc.setTextColor(100);
+  if (tableData.length === 0) {
+    addToast({ type: 'error', title: 'No Data', message: 'There is no data to generate a PDF for the selected filters.' });
+    return;
+  }
 
-  const dateRange = `Period: ${filters.startDate || 'Start'} to ${filters.endDate || 'End'}`;
-  doc.text(dateRange, 14, 30);
+  // Determine which barbers to include in the report
+  let reportBarbers: Barber[] = [];
+  if (filters.barberId) {
+    const selectedBarber = barbers.value.find(b => b.id === filters.barberId);
+    if (selectedBarber) {
+      reportBarbers = [selectedBarber];
+    }
+  } else {
+    const barberIdsInData = [...new Set(tableData.map(item => item.barber_id))];
+    reportBarbers = barbers.value.filter(b => barberIdsInData.includes(b.id));
+  }
+
+  const uniqueDates = [...new Set(tableData.map(item => item.collection_date))].sort();
+
+  // Create pivot data structure: Map<date, Map<barber_id, {appointments, collection}>>
+  const pivotData = new Map();
+  uniqueDates.forEach(date => {
+    const dailyData = new Map();
+    reportBarbers.forEach(barber => {
+      const entry = tableData.find(d => d.collection_date === date && d.barber_id === barber.id);
+      dailyData.set(barber.id, {
+        appointments: entry?.number_of_appointments ?? 0,
+        collection: entry?.total_amount_manually_entered ?? 0,
+      });
+    });
+    pivotData.set(date, dailyData);
+  });
   
-  const barberFilter = filters.barberId ? barbers.value.find(b => b.id === filters.barberId)?.name : 'All Barbers';
-  doc.text(`Barber: ${barberFilter}`, 14, 36);
+  // Build headers for autotable
+  const head: any[] = [
+    [{ content: 'Date', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, ...reportBarbers.map(b => ({ content: b.name, colSpan: 2, styles: { halign: 'center' } })), { content: 'Total', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
+    reportBarbers.flatMap(() => ['No:Appoint', 'Collection'])
+  ];
 
-  const head = [['Date', 'Barber', '# Appts', 'Calc. Amount', 'Manual Amount', 'Difference']];
-  const body = tableData.map(row => [
-    formatDate(row.collection_date),
-    row.barber?.name || 'N/A',
-    row.number_of_appointments ?? 0,
-    `$${row.total_amount_calculated?.toFixed(2) ?? '0.00'}`,
-    `$${row.total_amount_manually_entered?.toFixed(2) ?? '0.00'}`,
-    `$${getDifference(row.total_amount_calculated, row.total_amount_manually_entered)}`
-  ]);
+  // Build body for autotable
+  const body: any[] = uniqueDates.map(date => {
+    const row = [formatDate(date)];
+    let dailyTotal = 0;
+    reportBarbers.forEach(barber => {
+      const data = pivotData.get(date)?.get(barber.id);
+      row.push(data?.appointments ?? '-');
+      row.push(data?.collection.toFixed(2) ?? '0.00');
+      dailyTotal += data?.collection ?? 0;
+    });
+    row.push(dailyTotal.toFixed(2));
+    return row;
+  });
+
+  // Build footer/total row
+  const footerRow: any[] = [{ content: 'Total', styles: { fontStyle: 'bold' } }];
+  let grandTotalCollection = 0;
+  reportBarbers.forEach(barber => {
+    const barberAppointments = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.number_of_appointments || 0), 0);
+    const barberCollection = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.total_amount_manually_entered || 0), 0);
+    grandTotalCollection += barberCollection;
+    
+    footerRow.push({ content: barberAppointments.toString(), styles: { fontStyle: 'bold' } });
+    footerRow.push({ content: barberCollection.toFixed(2), styles: { fontStyle: 'bold' } });
+  });
+  footerRow.push({ content: grandTotalCollection.toFixed(2), styles: { fontStyle: 'bold', halign: 'center' } });
+  
+  body.push(footerRow);
+
+  doc.setFontSize(18);
+  doc.text('VASA SALOON - Daily Collections Report', 14, 22);
+  const dateRange = `Period: ${filters.startDate || 'Start'} to ${filters.endDate || 'End'}`;
+  doc.setFontSize(11);
+  doc.text(dateRange, 14, 30);
 
   autoTable(doc, {
     head: head,
     body: body,
-    startY: 42,
-    headStyles: { fillColor: [22, 163, 74] }, // Green-600
+    startY: 38,
+    theme: 'grid',
+    headStyles: { fillColor: [243, 244, 246], textColor: 17, fontStyle: 'bold', halign: 'center' },
+    styles: { halign: 'center' },
+    columnStyles: {
+      0: { halign: 'left' }
+    },
     didDrawPage: (data) => {
-      // Totals
-      const totalManual = tableData.reduce((sum, row) => sum + (row.total_amount_manually_entered || 0), 0);
-      const totalCalculated = tableData.reduce((sum, row) => sum + (row.total_amount_calculated || 0), 0);
-      const totalAppointments = tableData.reduce((sum, row) => sum + (row.number_of_appointments || 0), 0);
-
-      const finalY = (data.cursor as { y: number }).y;
-      doc.setFontSize(12);
-      doc.text('Totals', 14, finalY + 15);
-      doc.setFontSize(10);
-      doc.text(`Total Manual Amount: $${totalManual.toFixed(2)}`, 14, finalY + 22);
-      doc.text(`Total Calculated Amount: $${totalCalculated.toFixed(2)}`, 14, finalY + 28);
-      doc.text(`Total Appointments: ${totalAppointments}`, 14, finalY + 34);
+      // For multi-page tables, you might want a footer on each page
+      // This example just adds a total row at the very end.
     }
   });
-
-  doc.save(`vasa-saloon-collections-${new Date().toISOString().slice(0, 10)}.pdf`);
+  
+  pdfSrc.value = doc.output('datauristring');
+  isPdfPreviewOpen.value = true;
 };
 
 onMounted(async () => {
