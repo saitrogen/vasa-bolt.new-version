@@ -66,9 +66,13 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useAuth } from '../composables/useAuth'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { storeToRefs } from 'pinia'
 
-const { signIn, loading } = useAuth()
+const router = useRouter()
+const authStore = useAuthStore()
+const { loading } = storeToRefs(authStore)
 
 const form = reactive({
   email: '',
@@ -77,7 +81,10 @@ const form = reactive({
 
 const handleSubmit = async () => {
   if (form.email && form.password) {
-    await signIn(form.email, form.password)
+    const success = await authStore.signIn(form.email, form.password)
+    if (success) {
+      router.push('/')
+    }
   }
 }
 </script>

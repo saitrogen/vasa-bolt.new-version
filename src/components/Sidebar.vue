@@ -59,9 +59,9 @@
           <div class="w-9 h-9 bg-primary-100 dark:bg-primary-500/10 rounded-full flex items-center justify-center flex-shrink-0">
             <UserIcon class="w-5 h-5 text-primary-600 dark:text-primary-300" />
           </div>
-          <div v-if="!props.isCollapsed" class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Admin</p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 truncate">Administrator</p>
+          <div v-if="!props.isCollapsed && user" class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ user.email }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ user.user_metadata?.role || 'User' }}</p>
           </div>
         </div>
 
@@ -84,8 +84,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { storeToRefs } from 'pinia'
 import {
   HomeIcon,
   CalendarDaysIcon,
@@ -105,7 +106,10 @@ import { useBreakpoints } from '../composables/useBreakpoints';
 import { computed } from 'vue';
 
 const route = useRoute()
-const { signOut } = useAuth()
+const router = useRouter()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+
 const { width } = useBreakpoints()
 
 const isMobile = computed(() => width.value < 1024)
@@ -132,7 +136,10 @@ const isActive = (path: string) => {
   return route.path === path
 }
 
-const handleSignOut = () => {
-  signOut()
+const handleSignOut = async () => {
+  const success = await authStore.signOut()
+  if (success) {
+    router.push('/login')
+  }
 }
 </script>

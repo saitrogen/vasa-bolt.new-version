@@ -1,19 +1,17 @@
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase'
-import { useRouter } from 'vue-router'
-import { useToast } from './useToast'
+import { useToast } from '../composables/useToast'
 import type { User } from '@supabase/supabase-js'
 
-const user = ref<User | null>(null)
-const loading = ref(false)
-
-export function useAuth() {
-  const router = useRouter()
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const loading = ref(false)
   const { addToast } = useToast()
 
   const isAuthenticated = computed(() => !!user.value)
 
-  const signIn = async (email: string, password: string) => {
+  async function signIn(email: string, password: string) {
     loading.value = true
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -29,20 +27,20 @@ export function useAuth() {
         title: 'Welcome back!',
         message: 'You have been successfully logged in.',
       })
-      
-      router.push('/')
+      return true
     } catch (error: any) {
       addToast({
         type: 'error',
         title: 'Login Failed',
         message: error.message || 'Invalid email or password',
       })
+      return false
     } finally {
       loading.value = false
     }
   }
 
-  const signOut = async () => {
+  async function signOut() {
     loading.value = true
     try {
       const { error } = await supabase.auth.signOut()
@@ -54,20 +52,20 @@ export function useAuth() {
         title: 'Logged out',
         message: 'You have been successfully logged out.',
       })
-      
-      router.push('/login')
+      return true
     } catch (error: any) {
       addToast({
         type: 'error',
         title: 'Logout Failed',
         message: error.message,
       })
+      return false
     } finally {
       loading.value = false
     }
   }
 
-  const initializeAuth = async () => {
+  async function initializeAuth() {
     const { data: { session } } = await supabase.auth.getSession()
     user.value = session?.user || null
 
@@ -84,4 +82,4 @@ export function useAuth() {
     signOut,
     initializeAuth
   }
-}
+}) 

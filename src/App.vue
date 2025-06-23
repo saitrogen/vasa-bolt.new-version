@@ -59,13 +59,13 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useAuth } from './composables/useAuth'
+import { useAuthStore } from './stores/auth'
 import { useBreakpoints } from './composables/useBreakpoints'
 import Sidebar from './components/Sidebar.vue'
 import Toast from './components/Toast.vue'
 import { Menu } from 'lucide-vue-next'
 
-const { initializeAuth } = useAuth()
+const authStore = useAuthStore()
 const { width } = useBreakpoints()
 
 const isMobile = computed(() => width.value < 1024)
@@ -93,7 +93,7 @@ const toggleDarkMode = () => {
 }
 
 onMounted(() => {
-  initializeAuth()
+  authStore.initializeAuth()
   // Use localStorage if set, otherwise use system preference
   const storedTheme = localStorage.getItem('theme')
   if (storedTheme === 'dark') {
