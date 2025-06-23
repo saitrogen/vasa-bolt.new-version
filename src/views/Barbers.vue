@@ -44,10 +44,10 @@
     <!-- Barber Modal -->
     <Modal
       :is-open="showBarberModal"
-      :title="editingBarber ? 'Edit Barber' : 'Add New Barber'"
+      :title="editingBarber ? 'Edit Barber' : 'Invite New Barber'"
       @close="closeBarberModal"
     >
-      <form @submit.prevent="saveBarber" class="space-y-4">
+      <form @submit.prevent="handleSaveBarber" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             Full Name *
@@ -135,7 +135,7 @@
             :disabled="submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingBarber ? 'Update' : 'Create') }}
+            {{ submitting ? 'Sending...' : (editingBarber ? 'Update Barber' : 'Send Invitation') }}
           </button>
         </div>
       </form>
@@ -205,66 +205,50 @@ const closeBarberModal = () => {
   resetForm()
 }
 
-const saveBarber = async () => {
-  if (!barberForm.name.trim()) {
-    addToast({
-      type: 'error',
-      title: 'Validation Error',
-      message: 'Barber name is required'
-    })
+const handleSaveBarber = async () => {
+  if (editingBarber.value) {
+    // Logic to UPDATE an existing barber
+    // This remains the same, updating the public.barbers table directly
+    const { error } = await supabase
+      .from('barbers')
+      .update({ 
+        name: barberForm.name,
+        phone_number_work: barberForm.phone_number_work,
+        phone_number_home: barberForm.phone_number_home,
+        email: barberForm.email,
+        home_address: barberForm.home_address,
+        is_active: barberForm.is_active,
+       })
+      .eq('id', editingBarber.value.id);
+
+      // Add toast/error handling here...
+
+  } else {
+    // Logic to CREATE a new barber via invitation
+    if (!barberForm.email) {
+      addToast({ type: 'error', title: 'Email is required', message: 'You must provide an email to invite a new barber.' })
     return
   }
   
   submitting.value = true
-  
   try {
-    const barberData = {
-      name: barberForm.name.trim(),
-      phone_number_work: barberForm.phone_number_work.trim() || null,
-      phone_number_home: barberForm.phone_number_home.trim() || null,
-      email: barberForm.email.trim() || null,
-      home_address: barberForm.home_address.trim() || null,
-      is_active: barberForm.is_active
-    }
-    
-    if (editingBarber.value) {
-      const { error } = await supabase
-        .from('barbers')
-        .update(barberData)
-        .eq('id', editingBarber.value.id)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Barber updated successfully'
+      const { error } = await supabase.functions.invoke('invite-staff', {
+        body: { barberData: barberForm },
       })
-    } else {
-      const { error } = await supabase
-        .from('barbers')
-        .insert(barberData)
       
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Barber created successfully'
-      })
-    }
-    
+      if (error) throw error;
+
+      addToast({ type: 'success', title: 'Invitation Sent', message: `Successfully invited ${barberForm.name}.` })
     closeBarberModal()
-    await fetchBarbers()
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: error.message || 'Failed to save barber'
-    })
+      fetchBarbers() // Refresh the list
+    } catch (err: any) {
+      // The Supabase client wraps the function error. The details are in `err.context`.
+      const errorMessage = err.context?.details || err.message || 'An unknown error occurred.';
+      addToast({ type: 'error', title: 'Invitation Error', message: errorMessage })
+      console.error(err);
   } finally {
     submitting.value = false
+    }
   }
 }
 
@@ -287,9 +271,7 @@ const fetchBarbers = async () => {
   }
 }
 
-onMounted(async () => {
-  loading.value = true
-  await fetchBarbers()
-  loading.value = false
+onMounted(() => {
+  fetchBarbers()
 })
 </script>
