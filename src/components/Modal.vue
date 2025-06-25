@@ -69,7 +69,7 @@ import { XMarkIcon } from '@heroicons/vue/24/outline'
 interface Props {
   isOpen: boolean
   title: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '3xl'
 }
 
 withDefaults(defineProps<Props>(), {
@@ -84,7 +84,8 @@ const sizeClasses = {
   sm: 'max-w-md',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
-  xl: 'max-w-4xl'
+  xl: 'max-w-4xl',
+  '3xl': 'max-w-6xl'
 }
 
 const closeModal = () => {

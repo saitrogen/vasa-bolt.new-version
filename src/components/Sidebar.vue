@@ -99,6 +99,7 @@ import {
   ArrowRightOnRectangleIcon,
   MoonIcon,
   SunIcon,
+  Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import { PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next';
 import { useBreakpoints } from '../composables/useBreakpoints';
@@ -126,6 +127,7 @@ const navigationItems = [
   { name: 'Expenses', to: '/expenses', icon: CurrencyDollarIcon },
   { name: 'Daily Collections', to: '/daily-collections', icon: DocumentTextIcon },
   { name: 'Reports', to: '/reports', icon: ChartBarIcon },
+  { name: 'Settings', to: '/settings', icon: Cog6ToothIcon },
 ]
 
 const isActive = (path: string) => {
