@@ -1,3 +1,7 @@
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+
 export interface Database {
   public: {
     Tables: {
@@ -70,6 +74,10 @@ export interface Database {
           email: string | null
           home_address: string | null
           is_active: boolean
+          visa_number: string | null
+          visa_expiry_date: string | null
+          passport_number: string | null
+          passport_expiry_date: string | null
           created_at: string
           updated_at: string
         }
@@ -82,6 +90,10 @@ export interface Database {
           email?: string | null
           home_address?: string | null
           is_active?: boolean
+          visa_number?: string | null
+          visa_expiry_date?: string | null
+          passport_number?: string | null
+          passport_expiry_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -94,6 +106,10 @@ export interface Database {
           email?: string | null
           home_address?: string | null
           is_active?: boolean
+          visa_number?: string | null
+          visa_expiry_date?: string | null
+          passport_number?: string | null
+          passport_expiry_date?: string | null
           updated_at?: string
         }
       }
