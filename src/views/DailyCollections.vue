@@ -61,7 +61,7 @@
                 <tr>
                   <th scope="col" class="table-header px-6 py-3 text-left">Date</th>
                   <th scope="col" class="table-header px-6 py-3 text-left">Barber</th>
-                  <th scope="col" class="table-header px-6 py-3 text-right"># Appointments</th>
+                  <th scope="col" class="table-header px-6 py-3 text-right">Appointments</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Calculated Amount</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Manual Amount</th>
                   <th scope="col" class="table-header px-6 py-3 text-right">Difference</th>
@@ -143,9 +143,11 @@ import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
 import { PlusIcon, InformationCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import type { DailyCollection, Barber, Appointment } from '../types';
+import type { Database } from '../types/database';
 
+type DatabaseDailyCollection = Database['public']['Tables']['daily_collections']['Row'];
+type DatabaseBarber = Database['public']['Tables']['barbers']['Row'];
 type DailyCollectionWithRelations = DailyCollection & {
-  barber: Barber | null;
   total_amount_calculated?: number;
 };
 
@@ -246,7 +248,7 @@ const saveCollection = async () => {
 
   const dataToSave = {
     collection_date: form.collection_date,
-    barber_id: form.barber_id,
+    barber_id: parseInt(form.barber_id),
     total_amount_manually_entered: form.total_amount_manually_entered,
     number_of_appointments: form.number_of_appointments,
     notes: form.notes
@@ -254,7 +256,7 @@ const saveCollection = async () => {
 
   let error;
   if (form.id) {
-    ({ error } = await supabase.from('daily_collections').update(dataToSave).eq('id', form.id));
+    ({ error } = await supabase.from('daily_collections').update(dataToSave).eq('id', parseInt(form.id)));
   } else {
     ({ error } = await supabase.from('daily_collections').insert(dataToSave));
   }
@@ -280,10 +282,44 @@ const fetchCollections = async () => {
     collections.value = [];
   } else {
     const collectionsWithCalculated = (data || []).map(c => {
-      const collectionDate = c.collection_date;
-      const relatedAppointments = appointments.value.filter(a => a.barber_id === c.barber_id && a.start_time.startsWith(collectionDate) && a.status === 'completed');
+      const dbCollection = c as DatabaseDailyCollection & { barber: DatabaseBarber | null };
+      const collectionDate = dbCollection.collection_date;
+      const relatedAppointments = appointments.value.filter(a => 
+        parseInt(a.barber_id) === dbCollection.barber_id && 
+        a.start_time.startsWith(collectionDate) && 
+        a.status === 'completed'
+      );
       const total_amount_calculated = relatedAppointments.reduce((sum, a) => sum + (a.total_amount || 0), 0);
-      return { ...c, total_amount_calculated };
+      
+      // Convert database types to application types
+      const collection: DailyCollectionWithRelations = {
+        id: dbCollection.id.toString(),
+        barber_id: dbCollection.barber_id.toString(),
+        collection_date: dbCollection.collection_date,
+        total_amount_manually_entered: dbCollection.total_amount_manually_entered,
+        number_of_appointments: dbCollection.number_of_appointments,
+        notes: dbCollection.notes,
+        created_at: dbCollection.created_at,
+        updated_at: dbCollection.updated_at,
+        barber: dbCollection.barber ? {
+          id: dbCollection.barber.id.toString(),
+          user_id: dbCollection.barber.user_id,
+          name: dbCollection.barber.name,
+          phone_number_work: dbCollection.barber.phone_number_work,
+          phone_number_home: dbCollection.barber.phone_number_home,
+          email: dbCollection.barber.email,
+          home_address: dbCollection.barber.home_address,
+          is_active: dbCollection.barber.is_active,
+          created_at: dbCollection.barber.created_at,
+          updated_at: dbCollection.barber.updated_at,
+          visa_number: dbCollection.barber.visa_number,
+          visa_expiry_date: dbCollection.barber.visa_expiry_date,
+          passport_number: dbCollection.barber.passport_number,
+          passport_expiry_date: dbCollection.barber.passport_expiry_date
+        } : undefined,
+        total_amount_calculated
+      };
+      return collection;
     });
     collections.value = collectionsWithCalculated;
   }
@@ -292,12 +328,42 @@ const fetchCollections = async () => {
 
 const fetchBarbers = async () => {
   const { data, error } = await supabase.from('barbers').select('*');
-  if (!error) barbers.value = data;
+  if (!error && data) {
+    barbers.value = data.map(b => ({
+      id: b.id.toString(),
+      user_id: b.user_id,
+      name: b.name,
+      phone_number_work: b.phone_number_work,
+      phone_number_home: b.phone_number_home,
+      email: b.email,
+      home_address: b.home_address,
+      is_active: b.is_active,
+      created_at: b.created_at,
+      updated_at: b.updated_at,
+      visa_number: b.visa_number,
+      visa_expiry_date: b.visa_expiry_date,
+      passport_number: b.passport_number,
+      passport_expiry_date: b.passport_expiry_date
+    }));
+  }
 };
 
 const fetchAppointments = async () => {
   const { data, error } = await supabase.from('appointments').select('*');
-  if (!error) appointments.value = data;
+  if (!error && data) {
+    appointments.value = data.map(a => ({
+      id: a.id.toString(),
+      client_id: a.client_id.toString(),
+      barber_id: a.barber_id.toString(),
+      start_time: a.start_time,
+      end_time: a.end_time,
+      status: a.status as 'booked' | 'confirmed' | 'completed' | 'cancelled' | 'no-show',
+      total_amount: a.total_amount,
+      notes: a.notes,
+      created_at: a.created_at,
+      updated_at: a.updated_at
+    }));
+  }
 };
 
 const setDateRange = (range: string) => {
