@@ -72,6 +72,10 @@ export interface Database {
           is_active: boolean
           created_at: string
           updated_at: string
+          visa_number: string | null
+          visa_expiry_date: string | null
+          passport_number: string | null
+          passport_expiry_date: string | null
         }
         Insert: {
           id?: number
@@ -84,6 +88,10 @@ export interface Database {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          visa_number?: string | null
+          visa_expiry_date?: string | null
+          passport_number?: string | null
+          passport_expiry_date?: string | null
         }
         Update: {
           id?: number
@@ -95,6 +103,10 @@ export interface Database {
           home_address?: string | null
           is_active?: boolean
           updated_at?: string
+          visa_number?: string | null
+          visa_expiry_date?: string | null
+          passport_number?: string | null
+          passport_expiry_date?: string | null
         }
       }
       barber_schedules: {
@@ -240,33 +252,57 @@ export interface Database {
         Row: {
           id: number
           expense_date: string
-          category: string
-          description: string
+          name: string
+          notes: string | null
           amount: number
-          bill_image_url: string | null
+          bill_url: string | null
+          category_id: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: number
           expense_date: string
-          category: string
-          description: string
+          name: string
+          notes?: string | null
           amount: number
-          bill_image_url?: string | null
+          bill_url?: string | null
+          category_id: number
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: number
           expense_date?: string
-          category?: string
-          description?: string
+          name?: string
+          notes?: string | null
           amount?: number
-          bill_image_url?: string | null
+          bill_url?: string | null
+          category_id?: number
           updated_at?: string
+        }
+      }
+      expense_categories: {
+        Row: {
+          id: number
+          name: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: number
+          name: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: number
+          name?: string
+          is_active?: boolean
         }
       }
     }
   }
 }
+
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']

@@ -268,6 +268,7 @@ import autoTable from 'jspdf-autotable'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/composables/useToast'
 import { useBreakpoints } from '@/composables/useBreakpoints'
+
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
 import Modal from '@/components/Modal.vue'
 
