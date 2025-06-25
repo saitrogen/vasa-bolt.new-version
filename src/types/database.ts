@@ -3,7 +3,7 @@ export interface Database {
     Tables: {
       clients: {
         Row: {
-          id: string
+          id: number
           name: string
           phone_number: string | null
           email: string | null
@@ -12,7 +12,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id?: number
           name: string
           phone_number?: string | null
           email?: string | null
@@ -21,7 +21,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
+          id?: number
           name?: string
           phone_number?: string | null
           email?: string | null
@@ -31,7 +31,7 @@ export interface Database {
       }
       services: {
         Row: {
-          id: string
+          id: number
           name: string
           price: number
           duration_minutes: number
@@ -41,7 +41,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id?: number
           name: string
           price: number
           duration_minutes: number
@@ -51,7 +51,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
+          id?: number
           name?: string
           price?: number
           duration_minutes?: number
@@ -62,7 +62,7 @@ export interface Database {
       }
       barbers: {
         Row: {
-          id: string
+          id: number
           user_id: string | null
           name: string
           phone_number_work: string | null
@@ -74,7 +74,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id?: number
           user_id?: string | null
           name: string
           phone_number_work?: string | null
@@ -86,7 +86,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
+          id?: number
           user_id?: string | null
           name?: string
           phone_number_work?: string | null
@@ -142,9 +142,9 @@ export interface Database {
       }
       appointments: {
         Row: {
-          id: string
-          client_id: string
-          barber_id: string
+          id: number
+          client_id: number
+          barber_id: number
           start_time: string
           end_time: string
           status: string
@@ -154,9 +154,9 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
-          client_id: string
-          barber_id: string
+          id?: number
+          client_id: number
+          barber_id: number
           start_time: string
           end_time: string
           status?: string
@@ -166,9 +166,9 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
-          client_id?: string
-          barber_id?: string
+          id?: number
+          client_id?: number
+          barber_id?: number
           start_time?: string
           end_time?: string
           status?: string
@@ -179,27 +179,27 @@ export interface Database {
       }
       appointment_services: {
         Row: {
-          id: string
-          appointment_id: string
-          service_id: string
+          id: number
+          appointment_id: number
+          service_id: number
           price_at_booking: number
           duration_at_booking: number
           quantity: number
           created_at: string
         }
         Insert: {
-          id?: string
-          appointment_id: string
-          service_id: string
+          id?: number
+          appointment_id: number
+          service_id: number
           price_at_booking: number
           duration_at_booking: number
           quantity?: number
           created_at?: string
         }
         Update: {
-          id?: string
-          appointment_id?: string
-          service_id?: string
+          id?: number
+          appointment_id?: number
+          service_id?: number
           price_at_booking?: number
           duration_at_booking?: number
           quantity?: number
@@ -207,8 +207,8 @@ export interface Database {
       }
       daily_collections: {
         Row: {
-          id: string
-          barber_id: string
+          id: number
+          barber_id: number
           collection_date: string
           total_amount_manually_entered: number
           number_of_appointments: number | null
@@ -217,8 +217,8 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
-          barber_id: string
+          id?: number
+          barber_id: number
           collection_date: string
           total_amount_manually_entered: number
           number_of_appointments?: number | null
@@ -227,8 +227,8 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
-          barber_id?: string
+          id?: number
+          barber_id?: number
           collection_date?: string
           total_amount_manually_entered?: number
           number_of_appointments?: number | null
@@ -238,7 +238,7 @@ export interface Database {
       }
       expenses: {
         Row: {
-          id: string
+          id: number
           expense_date: string
           category: string
           description: string
@@ -248,7 +248,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id?: number
           expense_date: string
           category: string
           description: string
@@ -258,7 +258,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
+          id?: number
           expense_date?: string
           category?: string
           description?: string
