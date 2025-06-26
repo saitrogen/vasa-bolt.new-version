@@ -1,5 +1,11 @@
 <template>
-  <div class="max-w-5xl mx-auto space-y-6 p-6">
+  <div v-if="clientStore.loadingSelected && !clientStore.selectedClient" class="flex justify-center items-center h-64">
+    <p class="text-slate-500 dark:text-slate-400">Loading client profile...</p>
+  </div>
+  <div v-else-if="!clientStore.selectedClient" class="flex justify-center items-center h-64">
+     <p class="text-slate-500 dark:text-slate-400">Client not found.</p>
+  </div>
+  <div v-else class="max-w-5xl mx-auto space-y-6 p-6">
     <!-- Back Button -->
     <button @click="goBack" class="flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 text-sm font-medium mb-2 btn-ghost">
       <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
@@ -10,38 +16,40 @@
       <div class="flex flex-col items-center justify-center md:w-1/4 p-6 border-r border-slate-200/80 dark:border-slate-800">
         <!-- Profile Picture Placeholder -->
         <div class="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-3xl text-slate-500 dark:text-slate-400 mb-2">
-          <span v-if="!client">?</span>
-          <span v-else>{{ client.name?.charAt(0) }}</span>
+          <span v-if="!clientStore.selectedClient">?</span>
+          <span v-else>{{ clientStore.selectedClient.name?.charAt(0) }}</span>
         </div>
-        <div class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ client?.name || 'Name' }}</div>
-        <div class="text-xs text-slate-500 dark:text-slate-400">Client ID: <span class="text-slate-700 dark:text-slate-300">{{ client?.id || '—' }}</span></div>
+        <div class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ clientStore.selectedClient?.name || 'Name' }}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Client ID: <span class="text-slate-700 dark:text-slate-300">{{ clientStore.selectedClient?.id || '—' }}</span></div>
       </div>
       <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
         <div>
           <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Name</label>
           <input v-if="editMode" v-model="form.name" class="input" />
-          <div v-else class="text-slate-900 dark:text-slate-100">{{ client?.name || '—' }}</div>
+          <div v-else class="text-slate-900 dark:text-slate-100">{{ clientStore.selectedClient?.name || '—' }}</div>
         </div>
         <div>
           <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Phone</label>
           <input v-if="editMode" v-model="form.phone_number" class="input" />
-          <div v-else class="text-slate-900 dark:text-slate-100">{{ client?.phone_number || '—' }}</div>
+          <div v-else class="text-slate-900 dark:text-slate-100">{{ clientStore.selectedClient?.phone_number || '—' }}</div>
         </div>
         <div>
           <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Email</label>
           <input v-if="editMode" v-model="form.email" class="input" />
-          <div v-else class="text-slate-900 dark:text-slate-100">{{ client?.email || '—' }}</div>
+          <div v-else class="text-slate-900 dark:text-slate-100">{{ clientStore.selectedClient?.email || '—' }}</div>
         </div>
         <div class="md:col-span-2">
           <label class="block text-slate-500 dark:text-slate-400 mb-1 text-xs">Notes</label>
           <textarea v-if="editMode" v-model="form.notes" class="textarea" />
-          <div v-else class="text-slate-900 dark:text-slate-100 whitespace-pre-line">{{ client?.notes || '—' }}</div>
+          <div v-else class="text-slate-900 dark:text-slate-100 whitespace-pre-line">{{ clientStore.selectedClient?.notes || '—' }}</div>
         </div>
       </div>
       <div class="flex flex-col justify-between p-6 md:w-32 md:border-l border-slate-200/80 dark:border-slate-800 items-end md:items-center">
-        <button v-if="!editMode" @click="editMode = true" class="btn btn-secondary mt-2 md:mt-0">Edit</button>
+        <button v-if="!editMode" @click="enableEditMode" class="btn btn-secondary mt-2 md:mt-0">Edit</button>
         <div v-else class="flex flex-wrap justify-end md:justify-center gap-2 mt-2 md:mt-0">
-          <button @click="save" class="btn btn-primary">Save</button>
+          <button @click="save" class="btn btn-primary" :disabled="clientStore.submitting">
+             {{ clientStore.submitting ? 'Saving...' : 'Save' }}
+          </button>
           <button @click="cancel" class="btn btn-outline">Cancel</button>
         </div>
       </div>
@@ -51,11 +59,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="card card-content flex flex-col items-center">
         <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Total Appointments</div>
-        <div class="text-2xl text-slate-900 dark:text-slate-100 font-bold">{{ stats.totalAppointments }}</div>
+        <div class="text-2xl text-slate-900 dark:text-slate-100 font-bold">{{ totalAppointmentsForClient }}</div>
       </div>
       <div class="card card-content flex flex-col items-center">
         <div class="text-slate-500 dark:text-slate-400 mb-2 text-xs">Upcoming Appointments</div>
-        <div class="text-2xl text-primary-600 dark:text-primary-400 font-bold">{{ stats.upcomingAppointments }}</div>
+        <div class="text-2xl text-primary-600 dark:text-primary-400 font-bold">{{ upcomingAppointmentsForClient }}</div>
       </div>
     </div>
 
@@ -73,7 +81,8 @@
           <button :class="tabClass('today')" @click="appointmentsTab = 'today'">Today</button>
           <button :class="tabClass('upcoming')" @click="appointmentsTab = 'upcoming'">Upcoming</button>
         </div>
-        <table class="w-full text-left">
+        <div v-if="appointmentStore.loading" class="text-center py-4">Loading appointments...</div>
+        <table v-else class="w-full text-left">
           <thead>
             <tr class="border-b border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-500 dark:text-slate-400">
               <th class="py-3 font-medium">Date</th>
@@ -83,10 +92,13 @@
             </tr>
           </thead>
           <tbody>
+             <tr v-if="filteredAppointments.length === 0">
+              <td colspan="4" class="text-center py-10 text-slate-500 dark:text-slate-400">No appointments for this period.</td>
+            </tr>
             <tr v-for="appt in filteredAppointments" :key="appt.id" class="border-b border-slate-200/80 dark:border-slate-700/80">
-              <td class="py-3">{{ formatDate(appt.start_time) }}</td>
-              <td class="py-3">{{ formatTime(appt.start_time) }}</td>
-              <td class="py-3">{{ formatTime(appt.end_time) }}</td>
+              <td class="py-3">{{ formatDateDisplay(appt.start_time) }}</td>
+              <td class="py-3">{{ formatTimeDisplay(appt.start_time) }}</td>
+              <td class="py-3">{{ formatTimeDisplay(appt.end_time) }}</td>
               <td class="py-3">{{ appt.barber?.name || '—' }}</td>
             </tr>
           </tbody>
@@ -103,59 +115,57 @@
     <p class="text-slate-500 dark:text-slate-400">Are you sure you want to save these changes?</p>
     <div class="mt-6 flex justify-end gap-4">
       <button @click="isConfirmModalOpen = false" class="btn btn-outline">Cancel</button>
-      <button @click="confirmSave" class="btn btn-primary">Save Changes</button>
+      <button @click="confirmSave" class="btn btn-primary" :disabled="clientStore.submitting">
+         {{ clientStore.submitting ? 'Saving...' : 'Save Changes' }}
+      </button>
     </div>
   </Modal>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { supabase } from '../lib/supabase'
-import type { Client, Appointment  } from '../types'
-import Modal from '../components/Modal.vue'
-import { useToast } from '../composables/useToast'
+import { storeToRefs } from 'pinia'
+import { useClientStore } from '@/stores/clientStore'
+import { useAppointmentStore } from '@/stores/appointmentStore'
+import type { TablesUpdate } from '@/types/database' // Assuming Client is Tables<'clients'>
+import Modal from '@/components/Modal.vue'
+import { useToast } from '@/composables/useToast'
+import { format as formatDateFns, parseISO, isToday, isFuture, isPast, startOfDay } from 'date-fns'
+
 
 const route = useRoute()
 const router = useRouter()
-const clientId = route.params.id as string
+const clientId = computed(() => route.params.id as string)
 
-const client = ref<Client | null>(null)
+const clientStore = useClientStore()
+const appointmentStore = useAppointmentStore()
+
+const { selectedClient, submitting: clientSubmitting, loadingSelected: clientLoading } = storeToRefs(clientStore)
+const { appointments: allAppointmentsForClient, loading: appointmentsLoading } = storeToRefs(appointmentStore)
+
+
 const editMode = ref(false)
-const form = ref<any>({})
+const form = ref<Partial<TablesUpdate<'clients'>>>({})
 const isConfirmModalOpen = ref(false)
 
 const { addToast } = useToast()
 
-const appointments = ref<Appointment[]>([])
-const stats = ref({ totalAppointments: 0, upcomingAppointments: 0 })
 const appointmentsTab = ref<'previous' | 'today' | 'upcoming'>('today')
 const mainTab = ref<'appointments' | 'collections'>('appointments')
 
-const fetchClient = async () => {
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('id', clientId)
-    .single()
-  if (!error && data) {
-    client.value = data
-    form.value = { ...data }
-  }
-}
 
-const fetchAppointments = async () => {
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('*, barber:barbers(*)')
-    .eq('client_id', clientId)
-    .order('start_time', { ascending: false })
-  if (!error && data) {
-    appointments.value = data
-    // Stats
-    const today = new Date().toISOString().slice(0, 10)
-    stats.value.totalAppointments = data.length
-    stats.value.upcomingAppointments = data.filter((a: any) => a.start_time > today).length
+watch(selectedClient, (newClient) => {
+  if (newClient) {
+    form.value = { ...newClient }
+  }
+}, { immediate: true });
+
+
+const enableEditMode = () => {
+  if (clientStore.selectedClient) {
+    form.value = { ...clientStore.selectedClient } // Initialize form with current client data
+    editMode.value = true
   }
 }
 
@@ -164,31 +174,33 @@ const save = () => {
 }
 
 const confirmSave = async () => {
-  const updates = {
+  if (!clientStore.selectedClient?.id) return;
+
+  const updateData: Partial<TablesUpdate<'clients'>> = {
     name: form.value.name,
-    phone_number: form.value.phone_number,
-    email: form.value.email,
-    notes: form.value.notes
-  }
-  const { error } = await supabase
-    .from('clients')
-    .update(updates)
-    .eq('id', clientId)
+    phone_number: form.value.phone_number || null,
+    email: form.value.email || null,
+    notes: form.value.notes || null
+  };
+
+  // Remove id from updateData if it exists
+  if ('id' in updateData) delete updateData.id;
+
+  const success = await clientStore.updateClient(clientStore.selectedClient.id, updateData)
 
   isConfirmModalOpen.value = false
-
-  if (!error) {
-    addToast({ title: 'Success', message: 'Client profile saved.', type: 'success' })
+  if (success) {
     editMode.value = false
-    fetchClient()
+    // Toast handled by store
   } else {
-    console.error('Error updating client:', error)
-    addToast({ title: 'Error', message: 'Failed to save client profile.', type: 'error' })
+    // Error toast handled by store
   }
 }
 
 const cancel = () => {
-  form.value = { ...client.value }
+  if (clientStore.selectedClient) {
+    form.value = { ...clientStore.selectedClient }
+  }
   editMode.value = false
 }
 
@@ -208,46 +220,76 @@ const tabClass = (tab: string) => {
   return `${base} text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50`
 }
 
+const clientAppointments = computed(() => {
+  if (!allAppointmentsForClient.value || !clientId.value) return [];
+  return allAppointmentsForClient.value.filter(a => a.client_id === clientId.value);
+});
+
 const filteredAppointments = computed(() => {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = startOfDay(new Date())
   if (appointmentsTab.value === 'today') {
-    return appointments.value.filter(a => a.start_time.startsWith(today))
+    return clientAppointments.value.filter(a => isToday(parseISO(a.start_time)))
   } else if (appointmentsTab.value === 'previous') {
-    return appointments.value.filter(a => a.start_time < today)
-  } else {
-    return appointments.value.filter(a => a.start_time > today)
+    return clientAppointments.value.filter(a => isPast(parseISO(a.start_time)) && !isToday(parseISO(a.start_time)))
+  } else { // upcoming
+    return clientAppointments.value.filter(a => isFuture(parseISO(a.start_time)) && !isToday(parseISO(a.start_time)))
   }
 })
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const totalAppointmentsForClient = computed(() => clientAppointments.value.length);
+
+const upcomingAppointmentsForClient = computed(() => {
+  return clientAppointments.value.filter(a =>
+    isFuture(parseISO(a.start_time)) &&
+    a.status !== 'cancelled' &&
+    a.status !== 'no-show'
+  ).length;
+});
+
+
+function formatDateDisplay(dateStr?: string | null) {
+  if (!dateStr) return '—';
+  try {
+    return formatDateFns(parseISO(dateStr), 'MMM d, yyyy')
+  } catch {
+    return 'Invalid Date'
+  }
 }
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+function formatTimeDisplay(dateStr?: string | null) {
+  if (!dateStr) return '—';
+   try {
+    return formatDateFns(parseISO(dateStr), 'h:mm a')
+  } catch {
+    return 'Invalid Time'
+  }
 }
 
 const goBack = () => router.push({ name: 'Clients' })
 
 onMounted(() => {
-  fetchClient()
-  fetchAppointments()
+  if (clientId.value) {
+    clientStore.fetchClientById(clientId.value)
+    appointmentStore.fetchAppointments() // Fetches all appointments
+  }
+})
+
+watch(clientId, (newId) => {
+  if (newId) {
+    clientStore.fetchClientById(newId)
+    appointmentStore.fetchAppointments()
+  }
 })
 </script>
 
 <style scoped>
 .input {
-  @apply w-full bg-gray-800 text-white rounded-lg px-3 py-2 mb-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500;
+  @apply w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mb-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500;
 }
-.btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition;
-}
-.btn-secondary {
-  @apply bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition;
+.textarea {
+  @apply w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mb-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500;
 }
 .card {
-  @apply bg-white dark:bg-slate-800 rounded-xl shadow p-0 overflow-hidden border border-slate-200 dark:border-slate-700;
+  @apply bg-white dark:bg-slate-800/50 rounded-xl shadow-lg p-0 overflow-hidden border border-slate-200/80 dark:border-slate-700/50;
 }
 .card-content {
   @apply p-6;

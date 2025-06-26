@@ -22,7 +22,20 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                <tr v-for="barber in barbers" :key="barber.id" class="table-row">
+                <tr v-if="barberStore.loadingList && barberStore.barbers.length === 0" v-for="n in 3" :key="`skel-${n}`">
+                  <td colspan="4" class="px-6 py-4">
+                    <div class="animate-pulse flex space-x-4">
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="!barberStore.loadingList && barberStore.barbers.length === 0">
+                   <td colspan="4" class="text-center py-10 text-slate-500 dark:text-slate-400">No barbers found.</td>
+                </tr>
+                <tr v-for="barber in barberStore.barbers" :key="barber.id" class="table-row">
                   <td class="table-cell px-6 py-4">
                     <router-link :to="`/barbers/${barber.id}`" class="font-medium hover:underline">
                       {{ barber.name }}
@@ -49,7 +62,7 @@
     >
       <form @submit.prevent="saveBarber" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Full Name *
           </label>
           <input
@@ -63,7 +76,7 @@
         
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Work Phone
             </label>
             <input
@@ -75,7 +88,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Personal Phone
             </label>
             <input
@@ -88,7 +101,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Email Address
           </label>
           <input
@@ -100,7 +113,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Home Address
           </label>
           <textarea
@@ -116,9 +129,9 @@
             <input
               v-model="barberForm.is_active"
               type="checkbox"
-              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="checkbox checkbox-primary"
             />
-            <span class="ml-2 text-sm text-gray-700">Barber is active</span>
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Barber is active</span>
           </label>
         </div>
         
@@ -132,10 +145,10 @@
           </button>
           <button
             type="submit"
-            :disabled="submitting"
+            :disabled="barberStore.submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingBarber ? 'Update' : 'Create') }}
+            {{ barberStore.submitting ? 'Saving...' : (editingBarber ? 'Update' : 'Create') }}
           </button>
         </div>
       </form>
@@ -145,22 +158,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
+import { storeToRefs } from 'pinia'
 import { PlusIcon } from '@heroicons/vue/24/outline'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../composables/useToast'
-import Modal from '../components/Modal.vue'
-import type { Barber } from '../types'
+import { useBarberStore } from '@/stores/barberStore' // Adjusted path
+import { useToast } from '@/composables/useToast' // Adjusted path
+import Modal from '@/components/Modal.vue' // Adjusted path
+import type { Tables } from '@/types/database' // Assuming Barber is Tables<'barbers'>
+
+type Barber = Tables<'barbers'>;
 
 const { addToast } = useToast()
-
-const barbers = ref<Barber[]>([])
-const loading = ref(true)
-const submitting = ref(false)
+const barberStore = useBarberStore()
+// const { barbers, loadingList, submitting } = storeToRefs(barberStore) // If needed directly
 
 const showBarberModal = ref(false)
 const editingBarber = ref<Barber | null>(null)
 
 const barberForm = reactive({
+  id: null as string | null | undefined, // Add id for editing context
   name: '',
   phone_number_work: '',
   phone_number_home: '',
@@ -170,14 +185,13 @@ const barberForm = reactive({
 })
 
 const resetForm = () => {
-  Object.assign(barberForm, {
-    name: '',
-    phone_number_work: '',
-    phone_number_home: '',
-    email: '',
-    home_address: '',
-    is_active: true
-  })
+  barberForm.id = null;
+  barberForm.name = '';
+  barberForm.phone_number_work = '';
+  barberForm.phone_number_home = '';
+  barberForm.email = '';
+  barberForm.home_address = '';
+  barberForm.is_active = true;
 }
 
 const openNewBarberModal = () => {
@@ -188,14 +202,13 @@ const openNewBarberModal = () => {
 
 const editBarber = (barber: Barber) => {
   editingBarber.value = barber
-  Object.assign(barberForm, {
-    name: barber.name,
-    phone_number_work: barber.phone_number_work || '',
-    phone_number_home: barber.phone_number_home || '',
-    email: barber.email || '',
-    home_address: barber.home_address || '',
-    is_active: barber.is_active
-  })
+  barberForm.id = barber.id; // Set id for editing context
+  barberForm.name = barber.name;
+  barberForm.phone_number_work = barber.phone_number_work || '';
+  barberForm.phone_number_home = barber.phone_number_home || '';
+  barberForm.email = barber.email || '';
+  barberForm.home_address = barber.home_address || '';
+  barberForm.is_active = barber.is_active;
   showBarberModal.value = true
 }
 
@@ -215,81 +228,33 @@ const saveBarber = async () => {
     return
   }
   
-  submitting.value = true
-  
-  try {
-    const barberData = {
-      name: barberForm.name.trim(),
-      phone_number_work: barberForm.phone_number_work.trim() || null,
-      phone_number_home: barberForm.phone_number_home.trim() || null,
-      email: barberForm.email.trim() || null,
-      home_address: barberForm.home_address.trim() || null,
-      is_active: barberForm.is_active
-    }
-    
-    if (editingBarber.value) {
-      const { error } = await supabase
-        .from('barbers')
-        .update(barberData)
-        .eq('id', editingBarber.value.id)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Barber updated successfully'
-      })
-    } else {
-      const { error } = await supabase
-        .from('barbers')
-        .insert(barberData)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Barber created successfully'
-      })
-    }
-    
-    closeBarberModal()
-    await fetchBarbers()
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: error.message || 'Failed to save barber'
-    })
-  } finally {
-    submitting.value = false
+  const barberData = {
+    name: barberForm.name.trim(),
+    phone_number_work: barberForm.phone_number_work.trim() || null,
+    phone_number_home: barberForm.phone_number_home.trim() || null,
+    email: barberForm.email.trim() || null,
+    home_address: barberForm.home_address.trim() || null,
+    is_active: barberForm.is_active
   }
+  
+  let success = false;
+  if (editingBarber.value && barberForm.id) {
+    const result = await barberStore.updateBarber(barberForm.id, barberData)
+    if (result) success = true;
+  } else {
+    const result = await barberStore.createBarber(barberData)
+    if (result) success = true;
+  }
+
+  if (success) {
+    closeBarberModal()
+    // Toast and list refresh handled by store
+  }
+  // Error toast handled by store
 }
 
-const fetchBarbers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('barbers')
-      .select('*')
-      .order('name')
-    
-    if (error) throw error
-    
-    barbers.value = data || []
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to fetch barbers'
-    })
-  }
-}
 
 onMounted(async () => {
-  loading.value = true
-  await fetchBarbers()
-  loading.value = false
+  barberStore.fetchBarbers()
 })
 </script>

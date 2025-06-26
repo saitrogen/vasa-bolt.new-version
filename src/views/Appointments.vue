@@ -9,10 +9,11 @@
     </div>
     
     <AppointmentCalendar
-      :appointments="appointments"
-      :barbers="barbers"
+      :appointments="appointmentStore.appointments"
+      :barbers="barberStore.barbers"
       @new-appointment="handleNewAppointment"
       @edit-appointment="handleEditAppointment"
+      :loading="appointmentStore.loading || barberStore.loadingList"
     />
     
     <!-- New/Edit Appointment Modal -->
@@ -23,7 +24,7 @@
     >
       <div class="flex border-b border-slate-200 dark:border-slate-700">
         <button
-          v-for="tab in tabs"
+          v-for="tab in modalTabs"
           :key="tab.id"
           @click="activeTab = tab.id"
           :class="[
@@ -42,9 +43,9 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="label">Client</label>
-              <select v-model="form.client_id" required class="select">
+              <select v-model="form.client_id" required class="select" :disabled="clientStore.loadingList">
                 <option disabled value="">Select Client</option>
-                <option v-for="client in clients" :key="client.id" :value="client.id">
+                <option v-for="client in clientStore.clients" :key="client.id" :value="client.id">
                   {{ client.name }}
                 </option>
               </select>
@@ -56,10 +57,11 @@
                 v-model="form.barber_id"
                 required
                 class="select"
+                :disabled="barberStore.loadingList"
               >
                 <option disabled value="">Select Barber</option>
                 <option
-                  v-for="barber in barbers"
+                  v-for="barber in barberStore.barbers"
                   :key="barber.id"
                   :value="barber.id"
                 >
@@ -94,9 +96,10 @@
 
         <div v-show="activeTab === 'services'">
           <label class="label">Services</label>
-          <div class="max-h-60 overflow-y-auto -m-2 p-2 space-y-1 mt-1 pretty-scrollbar">
+          <div v-if="serviceStore.loading" class="text-center py-4">Loading services...</div>
+          <div v-else class="max-h-60 overflow-y-auto -m-2 p-2 space-y-1 mt-1 pretty-scrollbar">
             <label
-              v-for="service in services"
+              v-for="service in serviceStore.activeServices"
               :key="service.id"
               :class="['flex items-center space-x-3 p-2 rounded-md cursor-pointer transition-colors',
                 form.service_ids.includes(service.id) ? 'bg-primary-50 dark:bg-primary-500/10' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -107,7 +110,6 @@
                 :value="service.id"
                 v-model="form.service_ids"
                 class="checkbox"
-                
               />
               <span :class="['font-medium', form.service_ids.includes(service.id) ? 'text-primary-800 dark:text-primary-200' : 'text-slate-800 dark:text-slate-200']">{{ service.name }}</span>
               <span class="ml-auto text-sm" :class="[form.service_ids.includes(service.id) ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400']">${{ service.price }}</span>
@@ -160,8 +162,8 @@
           <button type="button" @click="closeModal" class="btn btn-secondary">
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary">
-            Save Appointment
+          <button type="submit" class="btn btn-primary" :disabled="appointmentStore.loading">
+            {{ appointmentStore.loading ? 'Saving...' : 'Save Appointment' }}
           </button>
         </div>
       </form>
@@ -170,36 +172,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { supabase } from '../lib/supabase'
-import AppointmentCalendar from '../components/AppointmentCalendar.vue'
-import Modal from '../components/Modal.vue'
-import { useToast } from '../composables/useToast'
+import { ref, onMounted, reactive, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAppointmentStore } from '@/stores/appointmentStore'
+import { useBarberStore } from '@/stores/barberStore'
+import { useClientStore } from '@/stores/clientStore'
+import { useServiceStore } from '@/stores/serviceStore'
+import AppointmentCalendar from '@/components/AppointmentCalendar.vue' // Adjusted path
+import Modal from '@/components/Modal.vue' // Adjusted path
+import { useToast } from '@/composables/useToast' // Adjusted path
 import { PlusIcon } from '@heroicons/vue/24/outline'
-import type { Appointment, Barber, Client, Service } from '../types'
+import type { AppointmentWithRelated } from '@/types' // Assuming Appointment is AppointmentWithRelated
 import { format, parseISO } from 'date-fns'
 
 const { addToast } = useToast()
 
-const appointments = ref<Appointment[]>([])
-const barbers = ref<Barber[]>([])
-const clients = ref<Client[]>([])
-const services = ref<Service[]>([])
+const appointmentStore = useAppointmentStore()
+const barberStore = useBarberStore()
+const clientStore = useClientStore()
+const serviceStore = useServiceStore()
+
+// const { appointments /* other state if needed */ } = storeToRefs(appointmentStore)
+// const { barbers } = storeToRefs(barberStore)
+// const { clients } = storeToRefs(clientStore)
+// const { services, activeServices } = storeToRefs(serviceStore)
+
+
 const isModalOpen = ref(false)
-const editingAppointment = ref<Appointment | null>(null)
+const editingAppointment = ref<AppointmentWithRelated | null>(null)
 const activeTab = ref('details')
 
-const tabs = [
+const baseTabs = [
   { id: 'details', name: 'Details' },
   { id: 'services', name: 'Services' },
   { id: 'notes', name: 'Notes' },
 ]
-if (editingAppointment.value) {
-  tabs.push({ id: 'status', name: 'Status' })
-}
+
+const modalTabs = computed(() => {
+  if (editingAppointment.value) {
+    return [...baseTabs, { id: 'status', name: 'Status' }]
+  }
+  return baseTabs
+})
 
 const form = reactive({
-  id: null as string | null,
+  id: null as string | null | undefined,
   client_id: '',
   barber_id: '',
   date: '',
@@ -209,30 +226,6 @@ const form = reactive({
   status: 'scheduled',
   total_amount: 0
 })
-
-const fetchAppointments = async () => {
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('*, client:clients(name), barber:barbers(name), services:appointment_services(service_id)')
-    .order('start_time', { ascending: true })
-
-  if (error) {
-    addToast({ type: 'error', title: 'Error fetching appointments', message: error.message })
-  } else {
-    appointments.value = data || []
-  }
-}
-
-const fetchRelatedData = async () => {
-  const { data: barbersData } = await supabase.from('barbers').select('*')
-  if (barbersData) barbers.value = barbersData
-
-  const { data: clientsData } = await supabase.from('clients').select('*')
-  if (clientsData) clients.value = clientsData
-
-  const { data: servicesData } = await supabase.from('services').select('*')
-  if (servicesData) services.value = servicesData
-}
 
 const resetForm = () => {
   form.id = null
@@ -244,26 +237,28 @@ const resetForm = () => {
   form.notes = ''
   form.status = 'scheduled'
   form.total_amount = 0
+  activeTab.value = 'details'
 }
 
-const openModal = (appointment: Appointment | null) => {
+const openModal = (appointment: AppointmentWithRelated | null) => {
   editingAppointment.value = appointment
+  activeTab.value = 'details' // Reset tab
   
   if (appointment) {
     const startDate = parseISO(appointment.start_time)
     form.id = appointment.id
-    form.client_id = appointment.client_id
-    form.barber_id = appointment.barber_id
+    form.client_id = appointment.client_id || ''
+    form.barber_id = appointment.barber_id || ''
     form.date = format(startDate, 'yyyy-MM-dd')
     form.time = format(startDate, 'HH:mm')
-    form.service_ids = appointment.services?.map((s: any) => s.service_id) || []
+    // Ensure appointment_services and service_id are correctly accessed
+    form.service_ids = appointment.appointment_services?.map(as => as.service_id).filter(id => id !== null) as string[] || []
     form.notes = appointment.notes || ''
-    form.status = appointment.status
+    form.status = appointment.status || 'scheduled'
     form.total_amount = appointment.total_amount || 0
   } else {
     resetForm()
   }
-  
   isModalOpen.value = true
 }
 
@@ -274,16 +269,17 @@ const closeModal = () => {
 }
 
 const saveAppointment = async () => {
-  const selectedServices = services.value.filter(s => form.service_ids.includes(s.id))
-  const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0)
-  const calculatedAmount = selectedServices.reduce((sum, s) => sum + s.price, 0)
-  const startTime = new Date(`${form.date}T${form.time}`)
-  const endTime = new Date(startTime.getTime() + totalDuration * 60000)
-
   if (form.service_ids.length === 0) {
     addToast({ type: 'error', title: 'No services selected', message: 'Please select at least one service.' })
     return
   }
+
+  const selectedStoreServices = serviceStore.services.filter(s => form.service_ids.includes(s.id))
+  const totalDuration = selectedStoreServices.reduce((sum, s) => sum + s.duration_minutes, 0)
+  const calculatedAmount = selectedStoreServices.reduce((sum, s) => sum + s.price, 0)
+
+  const startTime = new Date(`${form.date}T${form.time}:00`) // Ensure seconds are included for ISO
+  const endTime = new Date(startTime.getTime() + totalDuration * 60000)
 
   const appointmentData = {
     client_id: form.client_id,
@@ -292,62 +288,32 @@ const saveAppointment = async () => {
     end_time: endTime.toISOString(),
     status: form.status,
     notes: form.notes,
-    total_amount: form.status === 'completed' ? form.total_amount : calculatedAmount
+    total_amount: form.status === 'completed' ? form.total_amount : calculatedAmount,
   }
 
-  let appointmentResult
-
+  let success = false
   if (form.id) {
-    const { data, error } = await supabase.from('appointments').update(appointmentData).eq('id', form.id).select().single()
-    if (error) {
-      addToast({ type: 'error', title: 'Error', message: error.message })
-      return
-    }
-    appointmentResult = data
+    const result = await appointmentStore.updateAppointment(form.id, appointmentData, form.service_ids)
+    if(result) success = true
   } else {
-    const { data, error } = await supabase.from('appointments').insert(appointmentData).select().single()
-    if (error) {
-      addToast({ type: 'error', title: 'Error', message: error.message })
-      return
-    }
-    appointmentResult = data
+    // For insert, 'id' should not be part of appointmentData
+    const { id, ...insertData } = appointmentData
+    const result = await appointmentStore.createAppointment(insertData, form.service_ids)
+     if(result) success = true
   }
 
-  const { error: deleteError } = await supabase.from('appointment_services').delete().eq('appointment_id', appointmentResult.id)
-  if (deleteError) {
-    addToast({ type: 'error', title: 'Error', message: deleteError.message })
-    return
+  if (success) {
+    closeModal()
+    // The store action already shows a toast and refreshes the list.
   }
-  
-  const appointmentServices = form.service_ids.map(service_id => {
-    const service = services.value.find(s => s.id === service_id)
-    return {
-      appointment_id: appointmentResult.id,
-      service_id: service_id,
-      price_at_booking: service?.price || 0,
-      duration_at_booking: service?.duration_minutes || 0,
-      quantity: 1
-    }
-  })
-
-  if (appointmentServices.length > 0) {
-    const { error: insertError } = await supabase.from('appointment_services').insert(appointmentServices)
-    if (insertError) {
-      addToast({ type: 'error', title: 'Error', message: insertError.message })
-      return
-    }
-  }
-  
-  addToast({ type: 'success', title: 'Success', message: 'Appointment saved!' })
-  closeModal()
-  fetchAppointments()
+  // Error handling is done within the store actions, including toasts.
 }
 
 const handleNewAppointment = (date?: Date, hour?: number) => {
-  openModal(null)
+  openModal(null) // Open with a null appointment to signify creation
   if (date) {
     form.date = format(date, 'yyyy-MM-dd')
-    if (hour) {
+    if (hour !== undefined) { // Check for undefined as hour can be 0
       const time = new Date()
       time.setHours(hour, 0, 0, 0)
       form.time = format(time, 'HH:mm')
@@ -355,12 +321,14 @@ const handleNewAppointment = (date?: Date, hour?: number) => {
   }
 }
 
-const handleEditAppointment = (appointment: Appointment) => {
+const handleEditAppointment = (appointment: AppointmentWithRelated) => {
   openModal(appointment)
 }
 
 onMounted(() => {
-  fetchAppointments()
-  fetchRelatedData()
+  appointmentStore.fetchAppointments()
+  barberStore.fetchBarbers()
+  clientStore.fetchClients()
+  serviceStore.fetchServices()
 })
 </script>

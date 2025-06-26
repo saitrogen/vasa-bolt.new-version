@@ -21,11 +21,11 @@
 
       <div v-show="showMobileFilters || !isMobile" class="transition-all">
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <input v-model="filters.startDate" type="date" class="input" />
-          <input v-model="filters.endDate" type="date" class="input" />
-          <select v-model="filters.category_id" class="select">
+          <input v-model="localFilters.startDate" type="date" class="input" @change="applyFilters" />
+          <input v-model="localFilters.endDate" type="date" class="input" @change="applyFilters" />
+          <select v-model="localFilters.category_id" class="select" @change="applyFilters">
             <option value="">All Categories</option>
-            <option v-for="cat in expenseCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+            <option v-for="cat in categoryStore.activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
         </div>
       
@@ -34,13 +34,13 @@
           <button @click="setFilterDateRange('today')" class="btn btn-xs btn-outline">Today</button>
           <button @click="setFilterDateRange('this_month')" class="btn btn-xs btn-outline">This Month</button>
           <button @click="setFilterDateRange('last_month')" class="btn btn-xs btn-outline">Last Month</button>
-          <button @click="clearDateFilters" class="btn btn-xs btn-ghost text-red-500 btn-outline">Clear Filter</button>
+          <button @click="clearAllFilters" class="btn btn-xs btn-ghost text-red-500 btn-outline">Clear Filter</button>
         </div>
       </div>
       
       <div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4 flex items-center justify-between">
         <div class="text-sm text-gray-600 dark:text-gray-300">
-          {{ filteredExpenses.length }} expense{{ filteredExpenses.length !== 1 ? 's' : '' }}
+          {{ expenseStore.filteredExpenses.length }} expense{{ expenseStore.filteredExpenses.length !== 1 ? 's' : '' }}
         </div>
         <div class="flex items-center gap-2">
             <button @click="previewPdf" class="btn btn-sm btn-outline">
@@ -48,7 +48,7 @@
                 <span >Preview PDF</span>
             </button>
         <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Total: ${{ totalAmount.toFixed(2) }}
+          Total: ${{ expenseStore.totalFilteredAmount.toFixed(2) }}
             </div>
         </div>
       </div>
@@ -71,7 +71,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
-            <tr v-if="loading" v-for="n in 5" :key="n">
+            <tr v-if="expenseStore.loading && paginatedExpenses.length === 0" v-for="n in 5" :key="`skel-desk-${n}`">
               <td class="px-6 py-4 whitespace-nowrap" colspan="7">
                 <div class="animate-pulse flex space-x-4">
                   <div class="flex-1 space-y-2 py-1">
@@ -81,9 +81,9 @@
                 </div>
               </td>
             </tr>
-            <tr v-if="!loading && paginatedExpenses.length === 0">
+            <tr v-if="!expenseStore.loading && paginatedExpenses.length === 0">
               <td class="text-center py-10" colspan="7">
-                <div class="text-center text-slate-500">
+                <div class="text-center text-slate-500 dark:text-slate-400">
                   <p class="font-medium">No expenses found</p>
                   <p class="text-sm">Try adjusting your filters.</p>
                 </div>
@@ -97,7 +97,7 @@
                 {{ expense.name }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                {{ expense.expense_categories.name }}
+                {{ expense.expense_categories?.name || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                 {{ expense.notes }}
@@ -114,7 +114,7 @@
                   <PencilSquareIcon class="w-5 h-5" />
                   <span class="sr-only">Edit</span>
                 </button>
-                <button @click="deleteExpense(expense)" class="btn btn-sm btn-ghost text-red-500 hover:text-red-700">
+                <button @click="confirmDeleteExpense(expense)" class="btn btn-sm btn-ghost text-red-500 hover:text-red-700">
                   <TrashIcon class="w-5 h-5" />
                   <span class="sr-only">Delete</span>
                 </button>
@@ -126,8 +126,8 @@
 
       <!-- Mobile Cards -->
       <div class="block sm:hidden">
-        <div v-if="loading" class="p-4">
-          <div v-for="n in 5" :key="n" class="border-b border-slate-200 dark:border-slate-700 p-4">
+        <div v-if="expenseStore.loading && paginatedExpenses.length === 0" class="p-4">
+          <div v-for="n in 3" :key="`skel-mob-${n}`" class="border-b border-slate-200 dark:border-slate-700 p-4">
             <div class="animate-pulse flex space-x-4">
               <div class="flex-1 space-y-2 py-1">
                 <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded"></div>
@@ -136,7 +136,7 @@
             </div>
           </div>
         </div>
-        <div v-if="!loading && paginatedExpenses.length === 0" class="p-10 text-center text-slate-500">
+        <div v-if="!expenseStore.loading && paginatedExpenses.length === 0" class="p-10 text-center text-slate-500 dark:text-slate-400">
             <p class="font-medium">No expenses found</p>
             <p class="text-sm">Try adjusting your filters.</p>
         </div>
@@ -145,7 +145,7 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-semibold text-slate-900 dark:text-slate-100">{{ expense.name }}</p>
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ expense.expense_categories.name }}</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ expense.expense_categories?.name || 'N/A' }}</p>
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ formatDate(expense.expense_date) }}</p>
               </div>
               <p class="font-semibold text-lg text-slate-800 dark:text-slate-200">${{ expense.amount.toFixed(2) }}</p>
@@ -158,7 +158,7 @@
               <button @click="editExpense(expense)" class="btn btn-xs btn-ghost">
                 <PencilSquareIcon class="w-4 h-4" />
               </button>
-              <button @click="deleteExpense(expense)" class="btn btn-xs btn-ghost text-red-500">
+              <button @click="confirmDeleteExpense(expense)" class="btn btn-xs btn-ghost text-red-500">
                 <TrashIcon class="w-4 h-4" />
               </button>
             </div>
@@ -170,8 +170,8 @@
       <div v-if="totalPages > 1" class="card-footer flex items-center justify-between">
         <div class="text-sm text-slate-600 dark:text-slate-400">
           Showing <span class="font-medium">{{ startIndex + 1 }}</span> to <span class="font-medium">{{
-            Math.min(endIndex, filteredExpenses.length) }}</span> of <span class="font-medium">{{
-              filteredExpenses.length }}</span> results
+            Math.min(endIndex, expenseStore.filteredExpenses.length) }}</span> of <span class="font-medium">{{
+              expenseStore.filteredExpenses.length }}</span> results
         </div>
         <div class="flex items-center gap-1">
           <button @click="currentPage--" :disabled="currentPage === 1" class="btn btn-sm btn-outline">
@@ -210,9 +210,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="label">Category *</label>
-            <select v-model="expenseForm.category_id" required class="select">
+            <select v-model="expenseForm.category_id" required class="select" :disabled="categoryStore.loading">
               <option disabled value="">Select category</option>
-              <option v-for="category in expenseCategories" :key="category.id" :value="category.id">
+              <option v-for="category in categoryStore.activeCategories" :key="category.id" :value="category.id">
                 {{ category.name }}
               </option>
             </select>
@@ -238,8 +238,8 @@
         
         <div class="flex justify-end gap-3 pt-4">
           <button type="button" @click="closeExpenseModal" class="btn btn-secondary">Cancel</button>
-          <button type="submit" :disabled="submitting" class="btn btn-primary">
-            {{ submitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Create Expense') }}
+          <button type="submit" :disabled="expenseStore.submitting" class="btn btn-primary">
+            {{ expenseStore.submitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Create Expense') }}
           </button>
         </div>
       </form>
@@ -259,45 +259,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { PlusIcon, PencilSquareIcon, TrashIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon } from '@heroicons/vue/24/outline'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-import { supabase } from '@/lib/supabase'
+import { useExpenseStore, type ExpenseWithCategory } from '@/stores/expenseStore'
+import { useExpenseCategoryStore } from '@/stores/expenseCategoryStore'
 import { useToast } from '@/composables/useToast'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 
-import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
+import type { TablesInsert, TablesUpdate } from '@/types/database'
 import Modal from '@/components/Modal.vue'
 
-type ExpenseCategory = Tables<'expense_categories'>
-type Expense = Tables<'expenses'> & {
-  expense_categories: ExpenseCategory
-}
 
 const { addToast } = useToast()
 const { width } = useBreakpoints()
+const expenseStore = useExpenseStore()
+const categoryStore = useExpenseCategoryStore()
+
+const { loading: expensesLoading, submitting: expensesSubmitting, filteredExpenses: storeFilteredExpenses, totalFilteredAmount } = storeToRefs(expenseStore)
+const { categories: expenseCategories, loading: categoriesLoading } = storeToRefs(categoryStore)
+
 
 const isMobile = computed(() => width.value < 640)
 
-const loading = ref(false)
-const submitting = ref(false)
-const expenses = ref<Expense[]>([])
-const expenseCategories = ref<ExpenseCategory[]>([])
-
 const showExpenseModal = ref(false)
-const editingExpense = ref<Expense | null>(null)
+const editingExpense = ref<ExpenseWithCategory | null>(null)
 const isPdfPreviewOpen = ref(false)
 const pdfSrc = ref('')
 const showMobileFilters = ref(false)
 
-const filters = reactive({
-  startDate: '',
-  endDate: '',
-  category_id: '',
+// Local component copy of filters to interact with inputs
+const localFilters = reactive({
+  startDate: expenseStore.filters.startDate,
+  endDate: expenseStore.filters.endDate,
+  category_id: expenseStore.filters.category_id,
 })
+
+// Watch localFilters to update store filters
+watch(localFilters, (newFilters) => {
+  expenseStore.setFilters(newFilters)
+  currentPage.value = 1; // Reset to first page on filter change
+})
+
+const applyFilters = () => {
+  expenseStore.setFilters({ ...localFilters });
+}
 
 const setFilterDateRange = (period: 'today' | 'this_month' | 'last_month') => {
   const today = new Date();
@@ -319,85 +329,41 @@ const setFilterDateRange = (period: 'today' | 'this_month' | 'last_month') => {
       end = endOfMonth(lastMonthDate);
       break;
   }
-
-  filters.startDate = format(start, 'yyyy-MM-dd');
-  filters.endDate = format(end, 'yyyy-MM-dd');
+  localFilters.startDate = format(start, 'yyyy-MM-dd');
+  localFilters.endDate = format(end, 'yyyy-MM-dd');
+  applyFilters();
 }
 
-const clearDateFilters = () => {
-  filters.startDate = '';
-  filters.endDate = '';
+const clearAllFilters = () => {
+  localFilters.startDate = '';
+  localFilters.endDate = '';
+  localFilters.category_id = '';
+  applyFilters();
 }
 
-const newExpenseForm = (): TablesInsert<'expenses'> => ({
+
+const newExpenseForm = (): Omit<TablesInsert<'expenses'>, 'user_id'> => ({ // user_id will be set by RLS or trigger
   name: '',
   amount: 0,
   notes: '',
   expense_date: new Date().toISOString().substring(0, 10),
-  category_id: '' as any, // So dropdown shows placeholder
+  category_id: undefined, // Use undefined for type consistency with number | undefined
   bill_url: null,
 })
 
-const expenseForm = ref<TablesInsert<'expenses'> | TablesUpdate<'expenses'>>(newExpenseForm())
+const expenseForm = ref<Omit<TablesInsert<'expenses'>, 'user_id' | 'id'> | Omit<TablesUpdate<'expenses'>, 'user_id' | 'id'>>(newExpenseForm())
 const expenseBillFile = ref<File | null>(null)
 
 // Pagination
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
-const filteredExpenses = computed(() => {
-  let filtered = expenses.value
-  if (filters.startDate) {
-    filtered = filtered.filter(e => e.expense_date >= filters.startDate)
-  }
-  if (filters.endDate) {
-    filtered = filtered.filter(e => e.expense_date <= filters.endDate)
-  }
-  if (filters.category_id) {
-    filtered = filtered.filter(e => e.category_id === Number(filters.category_id))
-  }
-  return filtered
-})
 
-const totalAmount = computed(() => {
-  return filteredExpenses.value.reduce((total, expense) => total + expense.amount, 0)
-})
-
-const totalPages = computed(() => Math.ceil(filteredExpenses.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(expenseStore.filteredExpenses.length / itemsPerPage.value))
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
 const endIndex = computed(() => startIndex.value + itemsPerPage.value)
-const paginatedExpenses = computed(() => filteredExpenses.value.slice(startIndex.value, endIndex.value))
+const paginatedExpenses = computed(() => expenseStore.filteredExpenses.slice(startIndex.value, endIndex.value))
 
-const fetchExpenses = async () => {
-  loading.value = true
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*, expense_categories(id, name)')
-    .order('expense_date', { ascending: false })
-
-  if (error) {
-    addToast({ title: 'Error', message: 'Failed to fetch expenses.', type: 'error' })
-    console.error(error)
-  } else {
-    expenses.value = data as any[]
-  }
-  loading.value = false
-}
-
-const fetchExpenseCategories = async () => {
-  const { data, error } = await supabase
-    .from('expense_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('name')
-
-  if (error) {
-    addToast({ title: 'Error', message: 'Failed to fetch expense categories.', type: 'error' })
-    console.error(error)
-  } else {
-    expenseCategories.value = data
-  }
-}
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -408,102 +374,63 @@ const handleFileChange = (event: Event) => {
   }
 }
 
-const uploadBill = async (file: File): Promise<string | null> => {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}.${fileExt}`
-  const filePath = `public/expense-bills/${fileName}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('expense-bills')
-    .upload(filePath, file)
-
-  if (uploadError) {
-    console.error('Error uploading file:', uploadError)
-    addToast({ title: 'Error', message: 'Failed to upload bill.', type: 'error' })
-    return null
-  }
-
-  const { data } = supabase.storage.from('expense-bills').getPublicUrl(filePath)
-  return data.publicUrl
-}
 
 const saveExpense = async () => {
-  if (submitting.value) return
-  submitting.value = true
+  if (expenseStore.submitting) return
 
-  let billUrl = editingExpense.value?.bill_url || null
+  const currentEditingId = editingExpense.value?.id;
 
-  if (expenseBillFile.value) {
-    const uploadedUrl = await uploadBill(expenseBillFile.value)
-    if (uploadedUrl) {
-      billUrl = uploadedUrl
-    } else {
-      // Upload failed, stop saving.
-      submitting.value = false
-      return
-    }
-  }
+  const payload = {
+    ...expenseForm.value,
+    category_id: Number(expenseForm.value.category_id) // Ensure category_id is a number
+  };
 
-  const expenseData = { ...expenseForm.value, bill_url: billUrl }
-
-  if (editingExpense.value) {
-    // Update
-    const { error } = await supabase
-      .from('expenses')
-      .update(expenseData as TablesUpdate<'expenses'>)
-      .eq('id', editingExpense.value.id)
-
-    if (error) {
-      addToast({ title: 'Error', message: `Error updating expense: ${error.message}`, type: 'error' })
-    } else {
-      addToast({ title: 'Success', message: 'Expense updated successfully.', type: 'success' })
-      closeExpenseModal()
-      fetchExpenses()
-    }
+  let success = false;
+  if (currentEditingId) {
+    const result = await expenseStore.updateExpense(currentEditingId, payload as TablesUpdate<'expenses'>, expenseBillFile.value);
+    if (result) success = true;
   } else {
-    // Create
-    const { error } = await supabase
-      .from('expenses')
-      .insert(expenseData as TablesInsert<'expenses'>)
-
-    if (error) {
-      addToast({ title: 'Error', message: `Error creating expense: ${error.message}`, type: 'error' })
-    } else {
-      addToast({ title: 'Success', message: 'Expense created successfully.', type: 'success' })
-      closeExpenseModal()
-      fetchExpenses()
-    }
+    const result = await expenseStore.createExpense(payload as TablesInsert<'expenses'>, expenseBillFile.value);
+    if (result) success = true;
   }
 
-  submitting.value = false
+  if (success) {
+    closeExpenseModal();
+  }
 }
 
 const openNewExpenseModal = () => {
   editingExpense.value = null
-  expenseForm.value = newExpenseForm()
+  const formVals = newExpenseForm();
+  expenseForm.value = {
+    name: formVals.name,
+    amount: formVals.amount,
+    notes: formVals.notes,
+    expense_date: formVals.expense_date,
+    category_id: categoryStore.activeCategories[0]?.id || undefined, // Default to first active category or undefined
+    bill_url: formVals.bill_url,
+  };
   expenseBillFile.value = null
   showExpenseModal.value = true
 }
 
-const editExpense = (expense: Expense) => {
+const editExpense = (expense: ExpenseWithCategory) => {
   editingExpense.value = expense
-  expenseForm.value = {
-    ...expense,
+  expenseForm.value = { // Explicitly map fields to avoid passing extra properties like 'expense_categories'
+    name: expense.name,
+    amount: expense.amount,
+    notes: expense.notes,
+    expense_date: expense.expense_date,
     category_id: expense.category_id,
+    bill_url: expense.bill_url,
   }
   expenseBillFile.value = null
   showExpenseModal.value = true
 }
 
-const deleteExpense = async (expense: Expense) => {
+const confirmDeleteExpense = async (expense: ExpenseWithCategory) => {
   if (confirm(`Are you sure you want to delete the expense "${expense.name}"?`)) {
-    const { error } = await supabase.from('expenses').delete().eq('id', expense.id)
-    if (error) {
-      addToast({ title: 'Error', message: `Error deleting expense: ${error.message}`, type: 'error' })
-    } else {
-      addToast({ title: 'Success', message: 'Expense deleted successfully.', type: 'success' })
-      fetchExpenses()
-    }
+    await expenseStore.deleteExpense(expense.id)
   }
 }
 
@@ -517,12 +444,18 @@ const closePdfPreview = () => {
   pdfSrc.value = ''
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | null) => {
   if (!dateString) return ''
   try {
     return format(parseISO(dateString), 'MMM d, yyyy')
   } catch (error) {
-    return format(new Date(dateString), 'MMM d, yyyy')
+    // Fallback for dates that might not be full ISO strings (e.g. 'yyyy-MM-dd')
+    try {
+        return format(new Date(dateString + 'T00:00:00'), 'MMM d, yyyy') // Assume local timezone if not specified
+    } catch (e2) {
+        console.error("Error formatting date:", dateString, e2);
+        return "Invalid Date";
+    }
   }
 }
 
@@ -531,20 +464,20 @@ const previewPdf = () => {
   
   const title = 'Expense Report'
   
-  // Get date range from filters or from actual expenses
-  let startDate = filters.startDate
-  let endDate = filters.endDate
+  let reportStartDate = localFilters.startDate
+  let reportEndDate = localFilters.endDate
   
-  if (!startDate || !endDate) {
-    // If no filters, use the actual date range from expenses
-    const sortedDates = [...filteredExpenses.value]
-      .sort((a, b) => new Date(a.expense_date).getTime() - new Date(b.expense_date).getTime())
+  if (!reportStartDate || !reportEndDate) {
+    const sortedDates = [...expenseStore.filteredExpenses]
+      .map(e => e.expense_date)
+      .filter(d => d !== null)
+      .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime()) // Add null check for a and b
     
-    startDate = sortedDates[0]?.expense_date || new Date().toISOString().split('T')[0]
-    endDate = sortedDates[sortedDates.length - 1]?.expense_date || new Date().toISOString().split('T')[0]
+    reportStartDate = sortedDates[0] || new Date().toISOString().split('T')[0]
+    reportEndDate = sortedDates[sortedDates.length - 1] || new Date().toISOString().split('T')[0]
   }
   
-  const dateRange = `From ${formatDate(startDate)} to ${formatDate(endDate)}`
+  const dateRange = `From ${formatDate(reportStartDate)} to ${formatDate(reportEndDate)}`
     
   doc.setFontSize(18)
   doc.text(title, 14, 22)
@@ -552,10 +485,10 @@ const previewPdf = () => {
   doc.text(dateRange, 14, 30)
 
   const head = [['Date', 'Name', 'Category', 'Notes', 'Amount']]
-  const body = filteredExpenses.value.map(e => [
+  const body = expenseStore.filteredExpenses.map(e => [
     formatDate(e.expense_date),
     e.name,
-    e.expense_categories.name,
+    e.expense_categories?.name || 'N/A',
     e.notes || '-',
     `$${e.amount.toFixed(2)}`
   ])
@@ -574,13 +507,13 @@ const previewPdf = () => {
       fontStyle: 'bold',
     },
     columnStyles: {
-      3: { halign: 'right' },
-      4: { halign: 'right' }
+      // Column indices are 0-based
+      4: { halign: 'right' } // Amount column
     },
-    foot: [['', '', '', 'Total', `$${totalAmount.value.toFixed(2)}`]],
+    foot: [['', '', '', 'Total', `$${expenseStore.totalFilteredAmount.toFixed(2)}`]],
     footStyles: {
       fontStyle: 'bold',
-      fillColor: [84, 95, 107],
+      fillColor: [84, 95, 107], // A dark grey
       textColor: 255,
     }
   })
@@ -590,7 +523,11 @@ const previewPdf = () => {
 }
 
 onMounted(() => {
-  fetchExpenses()
-  fetchExpenseCategories()
+  expenseStore.fetchExpenses()
+  categoryStore.fetchCategories()
+  // Initialize localFilters from store filters after fetching, if necessary, or on created
+  localFilters.startDate = expenseStore.filters.startDate;
+  localFilters.endDate = expenseStore.filters.endDate;
+  localFilters.category_id = expenseStore.filters.category_id;
 })
 </script>

@@ -11,7 +11,7 @@
     <!-- Services Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div
-        v-for="service in services"
+        v-for="service in serviceStore.services"
         :key="service.id"
         class="card flex flex-col transition-all duration-300 hover:shadow-lg dark:hover:shadow-primary-500/10"
       >
@@ -60,7 +60,7 @@
         </div>
       </div>
       
-      <div v-if="loading" v-for="n in 4" :key="`skel-${n}`" class="card">
+      <div v-if="serviceStore.loading && serviceStore.services.length === 0" v-for="n in 4" :key="`skel-${n}`" class="card">
         <div class="p-5">
           <div class="animate-pulse flex flex-col space-y-4">
             <div class="flex justify-between items-start">
@@ -82,7 +82,7 @@
         </div>
       </div>
       
-      <div v-if="!loading && services.length === 0" class="col-span-full">
+      <div v-if="!serviceStore.loading && serviceStore.services.length === 0" class="col-span-full">
         <div class="text-center py-12">
           <WrenchScrewdriverIcon class="mx-auto h-12 w-12 text-gray-400" />
           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No services</h3>
@@ -174,9 +174,9 @@
             <input
               v-model="serviceForm.is_active"
               type="checkbox"
-              class="checkbox"
+              class="checkbox checkbox-primary"
             />
-            <span class="label-text ml-3">Service is active</span>
+            <span class="label-text ml-3 dark:text-gray-300">Service is active</span>
           </label>
         </div>
         
@@ -190,10 +190,10 @@
           </button>
           <button
             type="submit"
-            :disabled="submitting"
+            :disabled="serviceStore.submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingService ? 'Update Service' : 'Create Service') }}
+            {{ serviceStore.submitting ? 'Saving...' : (editingService ? 'Update Service' : 'Create Service') }}
           </button>
         </div>
       </form>
@@ -203,6 +203,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
+import { storeToRefs } from 'pinia'
 import {
   PlusIcon,
   WrenchScrewdriverIcon,
@@ -210,20 +211,22 @@ import {
   CurrencyDollarIcon,
   ClockIcon,
 } from '@heroicons/vue/24/outline'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../composables/useToast'
-import Modal from '../components/Modal.vue'
-import type { Service } from '../types'
+import { useServiceStore } from '@/stores/serviceStore'
+import { useToast } from '@/composables/useToast'
+import Modal from '@/components/Modal.vue'
+import type { Tables } from '@/types/database'
+
+type Service = Tables<'services'>;
 
 const { addToast } = useToast()
+const serviceStore = useServiceStore()
+// const { services, loading, submitting } = storeToRefs(serviceStore); // If direct template use is preferred
 
-const services = ref<Service[]>([])
-const loading = ref(true)
-const submitting = ref(false)
 const showServiceModal = ref(false)
 const editingService = ref<Service | null>(null)
 
 const serviceForm = reactive({
+  id: null as string | null | undefined,
   name: '',
   price: 0,
   duration_minutes: 30,
@@ -232,13 +235,12 @@ const serviceForm = reactive({
 })
 
 const resetForm = () => {
-  Object.assign(serviceForm, {
-    name: '',
-    price: 0,
-    duration_minutes: 30,
-    description: '',
-    is_active: true
-  })
+  serviceForm.id = null;
+  serviceForm.name = '';
+  serviceForm.price = 0;
+  serviceForm.duration_minutes = 30;
+  serviceForm.description = '';
+  serviceForm.is_active = true;
 }
 
 const openNewServiceModal = () => {
@@ -252,13 +254,12 @@ const editService = (service: Service) => {
 const openModal = (service: Service | null) => {
   editingService.value = service
   if (service) {
-    Object.assign(serviceForm, {
-      name: service.name,
-      price: service.price,
-      duration_minutes: service.duration_minutes,
-      description: service.description || '',
-      is_active: service.is_active
-    })
+    serviceForm.id = service.id;
+    serviceForm.name = service.name;
+    serviceForm.price = service.price;
+    serviceForm.duration_minutes = service.duration_minutes;
+    serviceForm.description = service.description || '';
+    serviceForm.is_active = service.is_active;
   } else {
     resetForm()
   }
@@ -281,107 +282,37 @@ const saveService = async () => {
     return
   }
   
-  submitting.value = true
+  const serviceData = {
+    name: serviceForm.name.trim(),
+    price: serviceForm.price,
+    duration_minutes: serviceForm.duration_minutes,
+    description: serviceForm.description.trim() || null,
+    is_active: serviceForm.is_active
+  }
   
-  try {
-    const serviceData = {
-      name: serviceForm.name.trim(),
-      price: serviceForm.price,
-      duration_minutes: serviceForm.duration_minutes,
-      description: serviceForm.description.trim() || null,
-      is_active: serviceForm.is_active
-    }
-    
-    if (editingService.value) {
-      const { error } = await supabase
-        .from('services')
-        .update(serviceData)
-        .eq('id', editingService.value.id)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Service updated successfully'
-      })
-    } else {
-      const { error } = await supabase
-        .from('services')
-        .insert(serviceData)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Service created successfully'
-      })
-    }
-    
+  let success = false;
+  if (editingService.value && serviceForm.id) {
+    // Ensure not to pass 'id' in the update payload itself if your Supabase policy/trigger handles it
+    const { id, ...updatePayload } = serviceData;
+    const result = await serviceStore.updateService(serviceForm.id, updatePayload);
+    if (result) success = true;
+  } else {
+    const result = await serviceStore.createService(serviceData);
+    if (result) success = true;
+  }
+
+  if (success) {
     closeServiceModal()
-    await fetchServices()
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: error.message || 'Failed to save service'
-    })
-  } finally {
-    submitting.value = false
   }
 }
 
 const toggleServiceStatus = async (service: Service) => {
-  try {
-    const { error } = await supabase
-      .from('services')
-      .update({ is_active: !service.is_active })
-      .eq('id', service.id)
-    
-    if (error) throw error
-    
-    addToast({
-      type: 'success',
-      title: 'Success',
-      message: `Service ${service.is_active ? 'deactivated' : 'activated'} successfully`
-    })
-    
-    await fetchServices()
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to update service status'
-    })
-  }
+  await serviceStore.updateServiceStatus(service.id, !service.is_active);
+  // Toast and list refresh handled by store
 }
 
-const fetchServices = async () => {
-  loading.value = true
-  try {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .order('name')
-    
-    if (error) throw error
-    
-    services.value = data || []
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to fetch services'
-    })
-  } finally {
-    loading.value = false
-  }
-}
 
 onMounted(() => {
-  fetchServices()
+  serviceStore.fetchServices()
 })
 </script>

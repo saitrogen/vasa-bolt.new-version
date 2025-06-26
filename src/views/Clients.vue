@@ -30,7 +30,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
-            <tr v-if="loading" v-for="n in 5" :key="n">
+            <tr v-if="clientStore.loadingList && clientStore.clients.length === 0" v-for="n in 5" :key="`skel-${n}`">
               <td class="px-6 py-4 whitespace-nowrap" colspan="5">
                 <div class="animate-pulse flex space-x-4">
                   <div class="rounded-full bg-slate-200 dark:bg-slate-700 h-10 w-10"></div>
@@ -41,9 +41,9 @@
                 </div>
               </td>
             </tr>
-            <tr v-if="!loading && paginatedClients.length === 0">
+            <tr v-if="!clientStore.loadingList && paginatedClients.length === 0">
               <td class="text-center py-10" colspan="5">
-                <div class="text-center text-slate-500">
+                <div class="text-center text-slate-500 dark:text-slate-400">
                   <p class="font-medium">No clients found</p>
                   <p v-if="searchQuery" class="text-sm">Try adjusting your search.</p>
                 </div>
@@ -170,37 +170,37 @@
           </button>
           <button
             type="submit"
-            :disabled="submitting"
+            :disabled="clientStore.submitting"
             class="btn btn-primary"
           >
-            {{ submitting ? 'Saving...' : (editingClient ? 'Update Client' : 'Create Client') }}
+            {{ clientStore.submitting ? 'Saving...' : (editingClient ? 'Update Client' : 'Create Client') }}
           </button>
         </div>
       </form>
     </Modal>
     
-    <!-- Client History Modal -->
+    <!-- Client History Modal (Functionality to trigger this needs review if it's still used) -->
     <Modal
-      v-if="selectedClient"
+      v-if="selectedClientForHistory"
       :is-open="showHistoryModal"
-      :title="`${selectedClient.name}`"
+      :title="`${selectedClientForHistory.name}`"
       size="lg"
       @close="closeHistoryModal"
     >
       <div class="space-y-4">
         <div class="text-sm text-slate-500 dark:text-slate-400">
-          Total appointments: {{ clientAppointments.length }}
+          Total appointments: {{ clientSpecificAppointments.length }}
         </div>
         
         <div class="space-y-3 max-h-[60vh] overflow-y-auto -m-3 p-3 pretty-scrollbar">
           <div
-            v-if="clientAppointments.length === 0"
+            v-if="clientSpecificAppointments.length === 0"
             class="text-center py-10 text-slate-500"
           >
             No appointments found for this client.
           </div>
           <div
-            v-for="appointment in clientAppointments"
+            v-for="appointment in clientSpecificAppointments"
             :key="appointment.id"
             class="card card-compact"
           >
@@ -219,9 +219,9 @@
                 </div>
               </div>
               <div class="mt-2 text-sm text-slate-600 dark:text-slate-300 space-y-1">
-                <div v-if="appointment.services?.length" class="flex items-center gap-2">
+                <div v-if="appointment.appointment_services?.length" class="flex items-center gap-2">
                   <TagIcon class="w-4 h-4 text-slate-400" />
-                  <span>{{ appointment.services.map(s => s.service?.name).join(', ') }}</span>
+                  <span>{{ appointment.appointment_services.map(as => as.service?.name).join(', ') }}</span>
                 </div>
                 <div v-if="appointment.total_amount" class="flex items-center gap-2">
                   <CurrencyDollarIcon class="w-4 h-4 text-slate-400" />
@@ -242,7 +242,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { format, parseISO } from 'date-fns'
+import { storeToRefs } from 'pinia'
+import { format, parseISO, isFuture, startOfDay } from 'date-fns'
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -253,19 +254,25 @@ import {
   CurrencyDollarIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../composables/useToast'
-import Modal from '../components/Modal.vue'
-import type { Client, Appointment } from '../types'
+import { useClientStore } from '@/stores/clientStore'
+import { useAppointmentStore } from '@/stores/appointmentStore'
+import { useToast } from '@/composables/useToast'
+import Modal from '@/components/Modal.vue'
+import type { Tables } from '@/types/database'
+import type { AppointmentWithRelated } from '@/types' // Assuming this type includes nested details
 import { useRouter } from 'vue-router'
+
+type Client = Tables<'clients'>;
 
 const { addToast } = useToast()
 const router = useRouter()
 
-const clients = ref<Client[]>([])
-const appointments = ref<Appointment[]>([])
-const loading = ref(true)
-const submitting = ref(false)
+const clientStore = useClientStore()
+const appointmentStore = useAppointmentStore()
+
+const { clients: allClients, loadingList: clientsLoading, submitting: clientSubmitting } = storeToRefs(clientStore)
+const { appointments: allAppointments, loading: appointmentsLoading } = storeToRefs(appointmentStore)
+
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
@@ -273,9 +280,10 @@ const itemsPerPage = 10
 const showClientModal = ref(false)
 const editingClient = ref<Client | null>(null)
 const showHistoryModal = ref(false)
-const selectedClient = ref<Client | null>(null)
+const selectedClientForHistory = ref<Client | null>(null)
 
 const clientForm = reactive({
+  id: null as string | null | undefined,
   name: '',
   phone_number: '',
   email: '',
@@ -283,10 +291,10 @@ const clientForm = reactive({
 })
 
 const filteredClients = computed(() => {
-  if (!searchQuery.value) return clients.value
+  if (!searchQuery.value) return allClients.value
   
   const query = searchQuery.value.toLowerCase()
-  return clients.value.filter(client =>
+  return allClients.value.filter(client =>
     client.name.toLowerCase().includes(query) ||
     (client.phone_number && client.phone_number.includes(query)) ||
     (client.email && client.email.toLowerCase().includes(query))
@@ -309,11 +317,10 @@ const paginatedClients = computed(() => {
   return filteredClients.value.slice(startIndex.value, endIndex.value)
 })
 
-const clientAppointments = computed(() => {
-  if (!selectedClient.value) return []
-  
-  return appointments.value
-    .filter(apt => apt.client_id === selectedClient.value!.id)
+const clientSpecificAppointments = computed(() => {
+  if (!selectedClientForHistory.value) return []
+  return allAppointments.value
+    .filter(apt => apt.client_id === selectedClientForHistory.value!.id)
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
 })
 
@@ -327,20 +334,20 @@ const getInitials = (name: string) => {
 }
 
 const getClientAppointmentCount = (clientId: string) => {
-  return appointments.value.filter(apt => apt.client_id === clientId).length
+  return allAppointments.value.filter(apt => apt.client_id === clientId).length
 }
 
 const getClientUpcomingCount = (clientId: string) => {
-  const now = new Date()
-  return appointments.value.filter(apt => 
+  const now = startOfDay(new Date())
+  return allAppointments.value.filter(apt =>
     apt.client_id === clientId && 
-    new Date(apt.start_time) > now &&
-    apt.status !== 'cancelled'
+    isFuture(parseISO(apt.start_time)) && // Check if appointment start_time is in the future
+    apt.status !== 'cancelled' && apt.status !== 'no-show' // Common statuses to exclude
   ).length
 }
 
 const getLastVisitDate = (clientId: string) => {
-  const completedAppointments = appointments.value
+  const completedAppointments = allAppointments.value
     .filter(apt => apt.client_id === clientId && apt.status === 'completed')
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
   
@@ -349,7 +356,8 @@ const getLastVisitDate = (clientId: string) => {
   return format(parseISO(completedAppointments[0].start_time), 'MMM d, yyyy')
 }
 
-const getStatusBadgeClass = (status: string) => {
+const getStatusBadgeClass = (status?: string | null) => {
+  if (!status) return 'badge-default';
   const classes = {
     'scheduled': 'badge-info',
     'completed': 'badge-success',
@@ -360,12 +368,11 @@ const getStatusBadgeClass = (status: string) => {
 }
 
 const resetForm = () => {
-  Object.assign(clientForm, {
-    name: '',
-    phone_number: '',
-    email: '',
-    notes: ''
-  })
+  clientForm.id = null;
+  clientForm.name = '';
+  clientForm.phone_number = '';
+  clientForm.email = '';
+  clientForm.notes = '';
 }
 
 const openNewClientModal = () => {
@@ -376,12 +383,11 @@ const openNewClientModal = () => {
 
 const editClient = (client: Client) => {
   editingClient.value = client
-  Object.assign(clientForm, {
-    name: client.name,
-    phone_number: client.phone_number || '',
-    email: client.email || '',
-    notes: client.notes || ''
-  })
+  clientForm.id = client.id;
+  clientForm.name = client.name;
+  clientForm.phone_number = client.phone_number || '';
+  clientForm.email = client.email || '';
+  clientForm.notes = client.notes || '';
   showClientModal.value = true
 }
 
@@ -391,14 +397,14 @@ const closeClientModal = () => {
   resetForm()
 }
 
-// const viewClientHistory = (client: Client) => {
-//   selectedClient.value = client
-//   showHistoryModal.value = true
-// }
+const viewClientHistory = (client: Client) => { // This function seems to be uncalled in the template
+  selectedClientForHistory.value = client
+  showHistoryModal.value = true
+}
 
 const closeHistoryModal = () => {
   showHistoryModal.value = false
-  selectedClient.value = null
+  selectedClientForHistory.value = null
 }
 
 const saveClient = async () => {
@@ -411,94 +417,30 @@ const saveClient = async () => {
     return
   }
   
-  submitting.value = true
-  
-  try {
-    const clientData = {
-      name: clientForm.name.trim(),
-      phone_number: clientForm.phone_number.trim() || null,
-      email: clientForm.email.trim() || null,
-      notes: clientForm.notes.trim() || null
-    }
-    
-    if (editingClient.value) {
-      const { error } = await supabase
-        .from('clients')
-        .update(clientData)
-        .eq('id', editingClient.value.id)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Client updated successfully'
-      })
-    } else {
-      const { error } = await supabase
-        .from('clients')
-        .insert(clientData)
-      
-      if (error) throw error
-      
-      addToast({
-        type: 'success',
-        title: 'Success',
-        message: 'Client created successfully'
-      })
-    }
-    
+  const clientData = {
+    name: clientForm.name.trim(),
+    phone_number: clientForm.phone_number.trim() || null,
+    email: clientForm.email.trim() || null,
+    notes: clientForm.notes.trim() || null
+  }
+
+  let success = false;
+  if (editingClient.value && clientForm.id) {
+    const result = await clientStore.updateClient(clientForm.id, clientData);
+    if (result) success = true;
+  } else {
+    const result = await clientStore.createClient(clientData);
+    if (result) success = true;
+  }
+
+  if (success) {
     closeClientModal()
-    await fetchClients()
-    
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: error.message || 'Failed to save client'
-    })
-  } finally {
-    submitting.value = false
+    // Toast and list refresh handled by store
   }
+  // Error toast handled by store
 }
 
-const fetchClients = async () => {
-  loading.value = true
-  try {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('name')
-    
-    if (error) throw error
-    
-    clients.value = data || []
-  } catch (error: any) {
-    addToast({
-      type: 'error',
-      title: 'Error',
-      message: 'Failed to fetch clients'
-    })
-  } finally {
-    loading.value = false
-  }
-}
-
-const fetchAppointments = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*, barber:barbers(name), services:appointment_services(service:services(name))')
-    
-    if (error) throw error
-    
-    appointments.value = data || []
-  } catch (error: any) {
-    console.error('Error fetching appointments:', error)
-  }
-}
-
-const goToClientProfile = (client: any) => {
+const goToClientProfile = (client: Client) => {
   router.push({ name: 'ClientProfile', params: { id: client.id } })
 }
 
@@ -507,7 +449,7 @@ watch(searchQuery, () => {
 })
 
 onMounted(async () => {
-  await fetchClients()
-  await fetchAppointments()
+  clientStore.fetchClients()
+  appointmentStore.fetchAppointments() // Fetches all appointments; specific filtering is done in computed props
 })
 </script>

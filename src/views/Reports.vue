@@ -8,7 +8,9 @@
           <option value="monthly">Monthly Summary</option>
           <option value="barber">Barber Performance</option>
         </select>
-        <button @click="generateReport" class="btn btn-primary">Generate</button>
+        <button @click="generateReport" class="btn btn-primary" :disabled="reportStore.loading">
+          {{ reportStore.loading ? 'Generating...' : 'Generate' }}
+        </button>
       </div>
     </div>
 
@@ -17,15 +19,18 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input v-model="filters.startDate" type="date" class="input" />
             <input v-model="filters.endDate" type="date" class="input" />
-            <select v-if="selectedReport === 'barber'" v-model="filters.barberId" class="select">
+            <select v-if="selectedReport === 'barber'" v-model="filters.barberId" class="select" :disabled="barberStore.loadingList">
                 <option value="">All Barbers</option>
-                <option v-for="barber in barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
+                <option v-for="barber in barberStore.barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
             </select>
         </div>
     </div>
 
     <div class="card overflow-hidden">
-      <div class="overflow-x-auto">
+      <div v-if="reportStore.loading" class="p-6 text-center text-slate-500 dark:text-slate-400">
+        Loading report data...
+      </div>
+      <div v-else class="overflow-x-auto">
         <div class="min-w-full inline-block align-middle">
           <div class="overflow-hidden">
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
@@ -34,19 +39,19 @@
                   <th v-for="header in reportHeaders" :key="header" scope="col" class="table-header px-6 py-3 text-left">{{ header }}</th>
                 </tr>
               </thead>
-              <tbody v-if="reportData.length > 0" class="divide-y divide-slate-200 dark:divide-slate-800">
-                <tr v-for="(row, index) in reportData" :key="index" class="table-row">
-                  <td v-for="(header, i) in reportHeaders" :key="i" class="table-cell px-6 py-4">
-                    {{ row[header] }}
+              <tbody v-if="reportStore.currentReportData.length > 0" class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-for="(row, index) in reportStore.currentReportData" :key="index" class="table-row">
+                  <td v-for="(header, i) in reportHeaders" :key="i" class="table-cell px-6 py-4 whitespace-nowrap">
+                    {{ formatTableCell(row[header]) }}
                   </td>
                 </tr>
               </tbody>
               <tbody v-else>
                 <tr>
-                  <td :colspan="reportHeaders.length" class="text-center py-12">
+                  <td :colspan="reportHeaders.length || 1" class="text-center py-12">
                     <div class="text-slate-500 dark:text-slate-400">
                       <p>No data to display.</p>
-                      <p class="text-sm">Select a report type and click "Generate".</p>
+                      <p class="text-sm">Select a report type and filters, then click "Generate".</p>
                     </div>
                   </td>
                 </tr>
@@ -61,12 +66,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { supabase } from '../lib/supabase';
-import type { Barber } from '../types';
+import { storeToRefs } from 'pinia';
+import { useReportStore } from '@/stores/reportStore';
+import { useBarberStore } from '@/stores/barberStore';
+import { format, parseISO } from 'date-fns';
+
+
+const reportStore = useReportStore();
+const barberStore = useBarberStore();
+
+const { currentReportData, loading: reportLoading } = storeToRefs(reportStore);
+const { barbers, loadingList: barbersLoading } = storeToRefs(barberStore);
 
 const selectedReport = ref('daily');
-const reportData = ref<any[]>([]);
-const barbers = ref<Barber[]>([]);
 const filters = reactive({
   startDate: '',
   endDate: '',
@@ -74,43 +86,46 @@ const filters = reactive({
 });
 
 const reportHeaders = computed(() => {
-  if (!reportData.value.length) return ['Report Data'];
-  return Object.keys(reportData.value[0]);
+  if (!currentReportData.value || currentReportData.value.length === 0) return ['Report Data'];
+  return Object.keys(currentReportData.value[0]).map(header =>
+    header.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  );
 });
 
-const generateReport = async () => {
-  let data: any[] | null = [];
-  
-  if (selectedReport.value === 'daily') {
-      const { data: dailyData, error } = await supabase.rpc('get_daily_summary', {
-          start_date: filters.startDate || undefined,
-          end_date: filters.endDate || undefined
-      });
-      if (!error) data = dailyData;
-  } else if (selectedReport.value === 'monthly') {
-      const { data: monthlyData, error } = await supabase.rpc('get_monthly_summary', {
-          start_date: filters.startDate || undefined,
-          end_date: filters.endDate || undefined
-      });
-      if (!error) data = monthlyData;
-  } else if (selectedReport.value === 'barber') {
-      const { data: barberData, error } = await supabase.rpc('get_barber_performance', {
-          start_date: filters.startDate || undefined,
-          end_date: filters.endDate || undefined,
-          barber_id_param: filters.barberId || undefined
-      });
-      if (!error) data = barberData;
+const formatTableCell = (value: any): string => {
+  if (value === null || value === undefined) return 'N/A';
+  // Check if it's a date-like string (ISO format)
+  if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/)) {
+    try {
+      return format(parseISO(value), 'MMM d, yyyy');
+    } catch (e) {
+      // Not a valid date, return as is
+    }
   }
-  
-  reportData.value = data || [];
+  // Check if it's a number that looks like a monetary value
+  if (typeof value === 'number' && !Number.isInteger(value)) {
+     if (value.toString().includes('.')) { // Heuristic for monetary values
+        return `$${value.toFixed(2)}`;
+     }
+  }
+  return value.toString();
 };
 
-const fetchBarbers = async () => {
-  const { data, error } = await supabase.from('barbers').select('*');
-  if (!error) barbers.value = data;
+
+const generateReport = async () => {
+  const { startDate, endDate, barberId } = filters;
+  if (selectedReport.value === 'daily') {
+      await reportStore.fetchDailySummaryReport(startDate, endDate);
+  } else if (selectedReport.value === 'monthly') {
+      await reportStore.fetchMonthlySummaryReport(startDate, endDate);
+  } else if (selectedReport.value === 'barber') {
+      await reportStore.fetchBarberPerformanceReport(startDate, endDate, barberId);
+  }
 };
 
 onMounted(() => {
-  fetchBarbers();
+  barberStore.fetchBarbers();
+  // Optionally generate a default report on load
+  // generateReport();
 });
 </script>

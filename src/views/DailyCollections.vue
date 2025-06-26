@@ -3,7 +3,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Daily Collections</h1>
       <div class="flex gap-2">
-        <button @click="generatePDF" class="btn btn-outline">
+        <button @click="generatePDF" class="btn btn-outline" :disabled="filteredCollections.length === 0 || collectionStore.loading">
           <ArrowDownTrayIcon class="w-4 h-4 md:mr-2" />
           <span class="hidden md:inline">Download PDF</span>
         </button>
@@ -30,7 +30,6 @@
     
     <!-- Filters -->
     <div class="card p-4">
-      <!-- Quick Range Buttons -->
       <div class="mb-4">
         <div class="flex flex-wrap gap-2">
           <button @click="setDateRange('today')" class="btn btn-outline btn-sm">Today</button>
@@ -41,13 +40,12 @@
         </div>
       </div>
       
-      <!-- Date Filters -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input v-model="filters.startDate" type="date" class="input" />
         <input v-model="filters.endDate" type="date" class="input" />
-        <select v-model="filters.barberId" class="select">
+        <select v-model="filters.barberId" class="select" :disabled="barberStore.loadingList">
           <option value="">All Barbers</option>
-          <option v-for="barber in barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
+          <option v-for="barber in barberStore.barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
         </select>
       </div>
     </div>
@@ -69,9 +67,15 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                <tr v-if="collectionStore.loading && filteredCollections.length === 0" v-for="n in 3" :key="`skel-${n}`">
+                    <td colspan="7" class="p-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                </tr>
+                <tr v-if="!collectionStore.loading && filteredCollections.length === 0">
+                    <td colspan="7" class="text-center py-10 text-slate-500 dark:text-slate-400">No collections found for the selected filters.</td>
+                </tr>
                 <tr v-for="collection in filteredCollections" :key="collection.id" class="table-row">
-                  <td class="table-cell px-6 py-4">{{ formatDate(collection.collection_date) }}</td>
-                  <td class="table-cell px-6 py-4 font-medium">{{ collection.barber?.name || 'N/A' }}</td>
+                  <td class="table-cell px-6 py-4">{{ formatDateDisplay(collection.collection_date) }}</td>
+                  <td class="table-cell px-6 py-4 font-medium">{{ getBarberName(collection.barber_id) }}</td>
                   <td class="table-cell px-6 py-4 text-right">{{ collection.number_of_appointments ?? 0 }}</td>
                   <td class="table-cell px-6 py-4 text-right">${{ collection.total_amount_calculated?.toFixed(2) ?? '0.00' }}</td>
                   <td class="table-cell px-6 py-4 text-right">${{ collection.total_amount_manually_entered?.toFixed(2) ?? '0.00' }}</td>
@@ -79,7 +83,7 @@
                     ${{ getDifference(collection.total_amount_calculated, collection.total_amount_manually_entered) }}
                   </td>
                   <td class="table-cell px-6 py-4 text-right">
-                    <button @click="openModal(collection)" class="btn btn-ghost">Edit</button>
+                    <button @click="openModal(collection)" class="btn btn-xs btn-ghost">Edit</button>
                   </td>
                 </tr>
               </tbody>
@@ -92,31 +96,33 @@
     <Modal :is-open="isModalOpen" :title="editingCollection ? 'Edit Collection' : 'Add Collection'" @close="closeModal">
       <form @submit.prevent="saveCollection" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium">Date</label>
+          <label class="block text-sm font-medium dark:text-gray-300">Date</label>
           <input v-model="form.collection_date" type="date" required class="input" />
         </div>
         <div>
-          <label class="block text-sm font-medium">Barber</label>
-          <select v-model="form.barber_id" required class="select">
-            <option value="">Select Barber</option>
-            <option v-for="barber in barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
+          <label class="block text-sm font-medium dark:text-gray-300">Barber</label>
+          <select v-model="form.barber_id" required class="select" :disabled="barberStore.loadingList">
+            <option disabled value="">Select Barber</option>
+            <option v-for="barber in barberStore.barbers" :key="barber.id" :value="barber.id">{{ barber.name }}</option>
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium">Manual Amount</label>
+          <label class="block text-sm font-medium dark:text-gray-300">Manual Amount</label>
           <input v-model.number="form.total_amount_manually_entered" type="number" step="0.01" required class="input" placeholder="eg. 1230.00"/>
         </div>
         <div>
-          <label class="block text-sm font-medium">Number of Appointments</label>
-          <input v-model.number="form.number_of_appointments" type="number" step="1" required class="input" placeholder="eg. 10.."/>
+          <label class="block text-sm font-medium dark:text-gray-300">Number of Appointments</label>
+          <input v-model.number="form.number_of_appointments" type="number" step="1" class="input" placeholder="eg. 10"/>
         </div>
         <div>
-          <label class="block text-sm font-medium">Notes</label>
+          <label class="block text-sm font-medium dark:text-gray-300">Notes</label>
           <textarea v-model="form.notes" class="textarea"></textarea>
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" @click="closeModal" class="btn btn-outline">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="submit" class="btn btn-primary" :disabled="collectionStore.loading">
+            {{ collectionStore.loading ? 'Saving...' : 'Save' }}
+          </button>
         </div>
       </form>
     </Modal>
@@ -135,30 +141,38 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { supabase } from '../lib/supabase';
+import { storeToRefs } from 'pinia';
 import { format, parseISO, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useToast } from '../composables/useToast';
-import Modal from '../components/Modal.vue';
-import { PlusIcon, InformationCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
-import type { DailyCollection, Barber, Appointment } from '../types';
-import type { Database } from '../types/database';
 
-type DatabaseDailyCollection = Database['public']['Tables']['daily_collections']['Row'];
-type DatabaseBarber = Database['public']['Tables']['barbers']['Row'];
-type DailyCollectionWithRelations = DailyCollection & {
+import { useCollectionStore } from '@/stores/collectionStore';
+import { useBarberStore } from '@/stores/barberStore';
+import { useAppointmentStore } from '@/stores/appointmentStore';
+import { useToast } from '@/composables/useToast';
+import Modal from '@/components/Modal.vue';
+import { PlusIcon, InformationCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import type { TablesInsert, TablesUpdate } from '@/types/database';
+import type { AppointmentWithRelated } from '@/types'; // Ensure this type is correctly defined
+
+// Define a more specific type for collection entries within the component if needed
+type DailyCollectionEntry = ReturnType<typeof useCollectionStore>['allCollectionsFlat'][0] & {
   total_amount_calculated?: number;
+  barber?: { name?: string | null }; // Add barber name from store if joined
 };
 
-const { addToast } = useToast();
 
-const collections = ref<DailyCollectionWithRelations[]>([]);
-const barbers = ref<Barber[]>([]);
-const appointments = ref<Appointment[]>([]);
-const loading = ref(true);
+const { addToast } = useToast();
+const collectionStore = useCollectionStore();
+const barberStore = useBarberStore();
+const appointmentStore = useAppointmentStore();
+
+const { barbers: allBarbers, loadingList: barbersLoading } = storeToRefs(barberStore);
+const { appointments: allAppointments, loading: appointmentsLoading } = storeToRefs(appointmentStore);
+// Directly use collectionStore.allCollectionsFlat and collectionStore.loading
+
 const isModalOpen = ref(false);
-const editingCollection = ref<DailyCollectionWithRelations | null>(null);
+const editingCollection = ref<DailyCollectionEntry | null>(null);
 const isPdfPreviewOpen = ref(false);
 const pdfSrc = ref('');
 
@@ -168,51 +182,90 @@ const filters = reactive({
   barberId: ''
 });
 
-const form = reactive({
-  id: null as string | null,
+const form = reactive<{
+  id: number | null;
+  collection_date: string;
+  barber_id: string | number; // Use string for v-model with select, but store might expect number
+  total_amount_manually_entered: number | null;
+  number_of_appointments: number | null;
+  notes: string | null;
+}>({
+  id: null,
   collection_date: new Date().toISOString().substring(0, 10),
   barber_id: '',
-  total_amount_manually_entered: null as number | null,
-  number_of_appointments: null as number | null,
+  total_amount_manually_entered: null,
+  number_of_appointments: null,
   notes: ''
 });
 
-const filteredCollections = computed(() => {
-  return collections.value.filter(c => {
-    const date = new Date(c.collection_date);
-    const startDate = filters.startDate ? new Date(filters.startDate) : null;
-    const endDate = filters.endDate ? new Date(filters.endDate) : null;
-
-    if (startDate && date < startDate) return false;
-    if (endDate && date > endDate) return false;
-    if (filters.barberId && c.barber_id !== filters.barberId) return false;
-
-    return true;
+const collectionsWithCalculatedAmount = computed(() => {
+  return collectionStore.allCollectionsFlat.map(c => {
+    const relatedAppointments = allAppointments.value.filter(a =>
+        a.barber_id === c.barber_id &&
+        a.start_time.startsWith(c.collection_date) &&
+        a.status === 'completed'
+    );
+    const total_amount_calculated = relatedAppointments.reduce((sum, a) => sum + (a.total_amount || 0), 0);
+    const barber = barberStore.getBarberById(c.barber_id as string); // Assuming barber_id is string in collection type
+    return {
+      ...c,
+      total_amount_calculated,
+      barber: barber ? { name: barber.name } : { name: 'N/A' } // Attach barber name
+    };
   });
 });
 
-const formatDate = (date: string) => format(parseISO(date), 'MMM d, yyyy');
 
-const getDifference = (calculated: number | undefined, manual: number) => {
-  if (calculated === undefined) return 'N/A';
+const filteredCollections = computed(() => {
+  return collectionsWithCalculatedAmount.value.filter(c => {
+    const collectionDateStr = c.collection_date; // Already yyyy-MM-dd
+    const startDate = filters.startDate;
+    const endDate = filters.endDate;
+
+    if (startDate && collectionDateStr < startDate) return false;
+    if (endDate && collectionDateStr > endDate) return false;
+    if (filters.barberId && c.barber_id?.toString() !== filters.barberId) return false;
+
+    return true;
+  }).sort((a, b) => new Date(b.collection_date).getTime() - new Date(a.collection_date).getTime());
+});
+
+const formatDateDisplay = (date: string | null) => {
+    if (!date) return 'N/A';
+    try {
+        return format(parseISO(date), 'MMM d, yyyy');
+    } catch {
+        return 'Invalid Date';
+    }
+}
+
+const getBarberName = (barberId: string | number | null | undefined): string => {
+  if (!barberId) return 'N/A';
+  const barber = barberStore.getBarberById(barberId.toString());
+  return barber?.name || 'Unknown Barber';
+};
+
+
+const getDifference = (calculated: number | undefined | null, manual: number | undefined | null) => {
+  if (calculated == null || manual == null) return 'N/A';
   const diff = manual - calculated;
   return diff.toFixed(2);
 };
 
-const getDifferenceClass = (calculated: number | undefined, manual: number) => {
-  if (calculated === undefined) return '';
+const getDifferenceClass = (calculated: number | undefined | null, manual: number | undefined | null) => {
+  if (calculated == null || manual == null) return '';
   const diff = manual - calculated;
   if (diff > 0) return 'text-green-500';
   if (diff < 0) return 'text-red-500';
   return '';
 };
 
-const openModal = (collection: DailyCollectionWithRelations | null) => {
+const openModal = (collection: DailyCollectionEntry | null) => {
   editingCollection.value = collection;
   if (collection) {
-    form.id = collection.id;
+    form.id = collection.id; // Assuming id is number
     form.collection_date = collection.collection_date;
-    form.barber_id = collection.barber_id;
+    form.barber_id = collection.barber_id?.toString() || '';
     form.total_amount_manually_entered = collection.total_amount_manually_entered;
     form.number_of_appointments = collection.number_of_appointments || null;
     form.notes = collection.notes || '';
@@ -233,138 +286,50 @@ const closeModal = () => {
 
 const closePdfPreview = () => {
   isPdfPreviewOpen.value = false;
-  pdfSrc.value = ''; // Clear src to release memory
+  pdfSrc.value = '';
 };
 
 const saveCollection = async () => {
-  if (form.total_amount_manually_entered == null || form.total_amount_manually_entered <= 0) {
-    addToast({ type: 'error', title: 'Invalid Input', message: 'Manual Amount must be a positive number.' });
+  if (form.total_amount_manually_entered == null || form.total_amount_manually_entered < 0) {
+    addToast({ type: 'error', title: 'Invalid Input', message: 'Manual Amount must be a non-negative number.' });
     return;
   }
-  if (form.number_of_appointments == null || form.number_of_appointments <= 0) {
-    addToast({ type: 'error', title: 'Invalid Input', message: 'Number of Appointments must be a positive number.' });
+   if (form.number_of_appointments != null && form.number_of_appointments < 0) {
+    addToast({ type: 'error', title: 'Invalid Input', message: 'Number of Appointments must be a non-negative number.' });
+    return;
+  }
+  if (!form.barber_id) {
+     addToast({ type: 'error', title: 'Invalid Input', message: 'Please select a barber.' });
     return;
   }
 
+
   const dataToSave = {
     collection_date: form.collection_date,
-    barber_id: parseInt(form.barber_id),
+    barber_id: Number(form.barber_id), // Ensure it's a number
     total_amount_manually_entered: form.total_amount_manually_entered,
     number_of_appointments: form.number_of_appointments,
     notes: form.notes
   };
 
-  let error;
+  let success = false;
   if (form.id) {
-    ({ error } = await supabase.from('daily_collections').update(dataToSave).eq('id', parseInt(form.id)));
+    // Update logic - collectionStore needs an update action
+    // success = await collectionStore.updateCollectionEntry(form.id, dataToSave as TablesUpdate<'daily_collections'>);
+    addToast({type: 'info', title: 'Pending', message: 'Update functionality for collections is not yet implemented in the store.'})
   } else {
-    ({ error } = await supabase.from('daily_collections').insert(dataToSave));
+    success = !!await collectionStore.addCollectionEntry(dataToSave as TablesInsert<'daily_collections'>);
   }
 
-  if (error) {
-    addToast({ type: 'error', title: 'Error', message: error.message });
-  } else {
+  if (success) {
     addToast({ type: 'success', title: 'Success', message: 'Collection saved!' });
     closeModal();
-    fetchCollections();
+    // Data should reactively update from the store if fetchAllCollections is called or collectionsByBarber is updated
+  } else if (!form.id) { // Only show generic error if not an update attempt (which has specific message)
+     // Error toast is handled by store for create action
   }
 };
 
-const fetchCollections = async () => {
-  loading.value = true;
-  const { data, error } = await supabase
-    .from('daily_collections')
-    .select('*, barber:barbers(*)')
-    .order('collection_date', { ascending: false });
-
-  if (error) {
-    addToast({ type: 'error', title: 'Error', message: error.message });
-    collections.value = [];
-  } else {
-    const collectionsWithCalculated = (data || []).map(c => {
-      const dbCollection = c as DatabaseDailyCollection & { barber: DatabaseBarber | null };
-      const collectionDate = dbCollection.collection_date;
-      const relatedAppointments = appointments.value.filter(a => 
-        parseInt(a.barber_id) === dbCollection.barber_id && 
-        a.start_time.startsWith(collectionDate) && 
-        a.status === 'completed'
-      );
-      const total_amount_calculated = relatedAppointments.reduce((sum, a) => sum + (a.total_amount || 0), 0);
-      
-      // Convert database types to application types
-      const collection: DailyCollectionWithRelations = {
-        id: dbCollection.id.toString(),
-        barber_id: dbCollection.barber_id.toString(),
-        collection_date: dbCollection.collection_date,
-        total_amount_manually_entered: dbCollection.total_amount_manually_entered,
-        number_of_appointments: dbCollection.number_of_appointments,
-        notes: dbCollection.notes,
-        created_at: dbCollection.created_at,
-        updated_at: dbCollection.updated_at,
-        barber: dbCollection.barber ? {
-          id: dbCollection.barber.id.toString(),
-          user_id: dbCollection.barber.user_id,
-          name: dbCollection.barber.name,
-          phone_number_work: dbCollection.barber.phone_number_work,
-          phone_number_home: dbCollection.barber.phone_number_home,
-          email: dbCollection.barber.email,
-          home_address: dbCollection.barber.home_address,
-          is_active: dbCollection.barber.is_active,
-          created_at: dbCollection.barber.created_at,
-          updated_at: dbCollection.barber.updated_at,
-          visa_number: dbCollection.barber.visa_number,
-          visa_expiry_date: dbCollection.barber.visa_expiry_date,
-          passport_number: dbCollection.barber.passport_number,
-          passport_expiry_date: dbCollection.barber.passport_expiry_date
-        } : undefined,
-        total_amount_calculated
-      };
-      return collection;
-    });
-    collections.value = collectionsWithCalculated;
-  }
-  loading.value = false;
-};
-
-const fetchBarbers = async () => {
-  const { data, error } = await supabase.from('barbers').select('*');
-  if (!error && data) {
-    barbers.value = data.map(b => ({
-      id: b.id.toString(),
-      user_id: b.user_id,
-      name: b.name,
-      phone_number_work: b.phone_number_work,
-      phone_number_home: b.phone_number_home,
-      email: b.email,
-      home_address: b.home_address,
-      is_active: b.is_active,
-      created_at: b.created_at,
-      updated_at: b.updated_at,
-      visa_number: b.visa_number,
-      visa_expiry_date: b.visa_expiry_date,
-      passport_number: b.passport_number,
-      passport_expiry_date: b.passport_expiry_date
-    }));
-  }
-};
-
-const fetchAppointments = async () => {
-  const { data, error } = await supabase.from('appointments').select('*');
-  if (!error && data) {
-    appointments.value = data.map(a => ({
-      id: a.id.toString(),
-      client_id: a.client_id.toString(),
-      barber_id: a.barber_id.toString(),
-      start_time: a.start_time,
-      end_time: a.end_time,
-      status: a.status as 'booked' | 'confirmed' | 'completed' | 'cancelled' | 'no-show',
-      total_amount: a.total_amount,
-      notes: a.notes,
-      created_at: a.created_at,
-      updated_at: a.updated_at
-    }));
-  }
-};
 
 const setDateRange = (range: string) => {
   const today = new Date();
@@ -377,7 +342,7 @@ const setDateRange = (range: string) => {
       endDate = endOfDay(today);
       break;
     case 'thisWeek':
-      startDate = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+      startDate = startOfWeek(today, { weekStartsOn: 1 });
       endDate = endOfWeek(today, { weekStartsOn: 1 });
       break;
     case 'thisMonth':
@@ -411,46 +376,41 @@ const generatePDF = () => {
     return;
   }
 
-  // Determine which barbers to include in the report
-  let reportBarbers: Barber[] = [];
+  let reportBarbers = barberStore.barbers;
   if (filters.barberId) {
-    const selectedBarber = barbers.value.find(b => b.id === filters.barberId);
+    const selectedBarber = barberStore.getBarberById(filters.barberId);
     if (selectedBarber) {
       reportBarbers = [selectedBarber];
+    } else {
+      reportBarbers = []; // Or handle error: barber not found
     }
-  } else {
-    const barberIdsInData = [...new Set(tableData.map(item => item.barber_id))];
-    reportBarbers = barbers.value.filter(b => barberIdsInData.includes(b.id));
   }
 
   const uniqueDates = [...new Set(tableData.map(item => item.collection_date))].sort();
 
-  // Create pivot data structure: Map<date, Map<barber_id, {appointments, collection}>>
-  const pivotData = new Map();
+  const pivotData = new Map<string, Map<string, { appointments: number, collection: number }>>();
   uniqueDates.forEach(date => {
-    const dailyData = new Map();
+    const dailyData = new Map<string, { appointments: number, collection: number }>();
     reportBarbers.forEach(barber => {
-      const entry = tableData.find(d => d.collection_date === date && d.barber_id === barber.id);
+      const entry = tableData.find(d => d.collection_date === date && d.barber_id?.toString() === barber.id);
       dailyData.set(barber.id, {
         appointments: entry?.number_of_appointments ?? 0,
         collection: entry?.total_amount_manually_entered ?? 0,
       });
     });
-    pivotData.set(date, dailyData);
+    pivotData.set(date!, dailyData); // Add null check for date
   });
   
-  // Build headers for autotable
   const head: any[] = [
     [{ content: 'Date', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, ...reportBarbers.map(b => ({ content: b.name, colSpan: 2, styles: { halign: 'center' } })), { content: 'Total', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
     reportBarbers.flatMap(() => ['No:Appoint', 'Collection'])
   ];
 
-  // Build body for autotable
   const body: any[] = uniqueDates.map(date => {
-    const row = [formatDate(date)];
+    const row: any[] = [formatDateDisplay(date)];
     let dailyTotal = 0;
     reportBarbers.forEach(barber => {
-      const data = pivotData.get(date)?.get(barber.id);
+      const data = pivotData.get(date!)?.get(barber.id); // Add null check for date
       row.push(data?.appointments ?? '-');
       row.push(data?.collection.toFixed(2) ?? '0.00');
       dailyTotal += data?.collection ?? 0;
@@ -459,12 +419,11 @@ const generatePDF = () => {
     return row;
   });
 
-  // Build footer/total row
   const footerRow: any[] = [{ content: 'Total', styles: { fontStyle: 'bold' } }];
   let grandTotalCollection = 0;
   reportBarbers.forEach(barber => {
-    const barberAppointments = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.number_of_appointments || 0), 0);
-    const barberCollection = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.total_amount_manually_entered || 0), 0);
+    const barberAppointments = tableData.filter(d => d.barber_id?.toString() === barber.id).reduce((sum, d) => sum + (d.number_of_appointments || 0), 0);
+    const barberCollection = tableData.filter(d => d.barber_id?.toString() === barber.id).reduce((sum, d) => sum + (d.total_amount_manually_entered || 0), 0);
     grandTotalCollection += barberCollection;
     
     footerRow.push({ content: barberAppointments.toString(), styles: { fontStyle: 'bold' } });
@@ -485,15 +444,11 @@ const generatePDF = () => {
     body: body,
     startY: 38,
     theme: 'grid',
-    headStyles: { fillColor: [243, 244, 246], textColor: 17, fontStyle: 'bold', halign: 'center' },
-    styles: { halign: 'center' },
+    headStyles: { fillColor: [243, 244, 246], textColor: 17, fontStyle: 'bold', halign: 'center' }, // Light gray header
+    styles: { halign: 'center', cellPadding: 2, fontSize: 8 },
     columnStyles: {
-      0: { halign: 'left' }
+      0: { halign: 'left' } // Date column left aligned
     },
-    // didDrawPage: (data) => {
-    //   // For multi-page tables, you might want a footer on each page
-    //   // This example just adds a total row at the very end.
-    // }
   });
   
   pdfSrc.value = doc.output('datauristring');
@@ -501,8 +456,8 @@ const generatePDF = () => {
 };
 
 onMounted(async () => {
-  await fetchBarbers();
-  await fetchAppointments();
-  await fetchCollections();
+  await barberStore.fetchBarbers();
+  await appointmentStore.fetchAppointments(); // To calculate 'Calculated Amount'
+  await collectionStore.fetchAllCollections(); // Fetch all collections
 });
 </script>
