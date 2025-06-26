@@ -2,14 +2,14 @@
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Daily Collections</h1>
-      <div class="flex gap-2">
-        <button @click="generatePDF" class="btn btn-outline">
+      <div class="flex gap-2 ">
+        <button @click="openPdfPreview" class="btn btn-outline">
           <ArrowDownTrayIcon class="w-4 h-4 md:mr-2" />
-          <span class="hidden md:inline">Download PDF</span>
+          <span >Download PDF</span>
         </button>
         <button @click="openModal(null)" class="btn btn-primary">
           <PlusIcon class="w-4 h-4 md:mr-2" />
-          <span class="hidden md:inline">Add Collection</span>
+          <span>Add Collection</span>
         </button>
       </div>
     </div>
@@ -37,7 +37,7 @@
           <button @click="setDateRange('thisWeek')" class="btn btn-outline btn-sm">This Week</button>
           <button @click="setDateRange('thisMonth')" class="btn btn-outline btn-sm">This Month</button>
           <button @click="setDateRange('previousMonth')" class="btn btn-outline btn-sm">Previous Month</button>
-          <button @click="clearDateRange()" class="btn btn-ghost btn-sm">Clear</button>
+          <button @click="clearDateRange()" class="btn btn-ghost btn-outline btn-sm">Clear</button>
         </div>
       </div>
       
@@ -52,7 +52,8 @@
       </div>
     </div>
     
-    <div class="card overflow-hidden">
+    <!-- Desktop Table View -->
+    <div v-if="breakpoints.is.value.mdUp" class="card overflow-hidden">
       <div class="overflow-x-auto">
         <div class="min-w-full inline-block align-middle">
           <div class="overflow-hidden">
@@ -84,6 +85,39 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile Card View -->
+    <div v-else class="space-y-4">
+      <div v-for="collection in filteredCollections" :key="`mobile-${collection.id}`" class="card p-4">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-bold text-lg">{{ collection.barber?.name || 'N/A' }}</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">{{ formatDate(collection.collection_date) }}</div>
+          </div>
+          <button @click="openModal(collection)" class="btn btn-ghost btn-sm">Edit</button>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <div class="text-slate-500 dark:text-slate-400">Appointments</div>
+            <div class="font-medium">{{ collection.number_of_appointments ?? 0 }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 dark:text-slate-400">Manual Amount</div>
+            <div class="font-medium">${{ collection.total_amount_manually_entered?.toFixed(2) ?? '0.00' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 dark:text-slate-400">Calculated</div>
+            <div class="font-medium">${{ collection.total_amount_calculated?.toFixed(2) ?? '0.00' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 dark:text-slate-400">Difference</div>
+            <div :class="getDifferenceClass(collection.total_amount_calculated, collection.total_amount_manually_entered)" class="font-medium">
+              ${{ getDifference(collection.total_amount_calculated, collection.total_amount_manually_entered) }}
+            </div>
           </div>
         </div>
       </div>
@@ -122,6 +156,12 @@
     </Modal>
 
     <Modal :is-open="isPdfPreviewOpen" title="PDF Preview" @close="closePdfPreview" size="xl">
+      <div class="mb-4 flex justify-center">
+        <div class="p-1 bg-slate-200 dark:bg-slate-700 rounded-md inline-flex space-x-1">
+          <button @click="setPdfReportType('combined')" :class="['btn btn-sm', pdfReportType === 'combined' ? 'btn-primary' : 'btn-ghost']">Combined Report</button>
+          <button @click="setPdfReportType('separate')" :class="['btn btn-sm', pdfReportType === 'separate' ? 'btn-primary' : 'btn-ghost']">Separate Tables</button>
+        </div>
+      </div>
       <div class="w-full h-[75vh]">
         <iframe v-if="pdfSrc" :src="pdfSrc" class="w-full h-full border-0" title="PDF Preview"></iframe>
       </div>
@@ -142,6 +182,7 @@ import autoTable from 'jspdf-autotable';
 import { useToast } from '../composables/useToast';
 import Modal from '../components/Modal.vue';
 import { PlusIcon, InformationCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import { useBreakpoints } from '../composables/useBreakpoints';
 import type { DailyCollection, Barber, Appointment } from '../types';
 import type { Database } from '../types/database';
 
@@ -152,6 +193,7 @@ type DailyCollectionWithRelations = DailyCollection & {
 };
 
 const { addToast } = useToast();
+const breakpoints = useBreakpoints();
 
 const collections = ref<DailyCollectionWithRelations[]>([]);
 const barbers = ref<Barber[]>([]);
@@ -161,6 +203,7 @@ const isModalOpen = ref(false);
 const editingCollection = ref<DailyCollectionWithRelations | null>(null);
 const isPdfPreviewOpen = ref(false);
 const pdfSrc = ref('');
+const pdfReportType = ref<'combined' | 'separate'>('combined');
 
 const filters = reactive({
   startDate: '',
@@ -234,6 +277,12 @@ const closeModal = () => {
 const closePdfPreview = () => {
   isPdfPreviewOpen.value = false;
   pdfSrc.value = ''; // Clear src to release memory
+};
+
+const setPdfReportType = (type: 'combined' | 'separate') => {
+  if (pdfReportType.value === type) return;
+  pdfReportType.value = type;
+  generatePDF();
 };
 
 const saveCollection = async () => {
@@ -402,12 +451,20 @@ const clearDateRange = () => {
   filters.endDate = '';
 };
 
+const openPdfPreview = () => {
+  pdfReportType.value = 'combined';
+  generatePDF();
+};
+
 const generatePDF = () => {
   const doc = new jsPDF({ orientation: 'landscape' });
   const tableData = filteredCollections.value;
 
   if (tableData.length === 0) {
     addToast({ type: 'error', title: 'No Data', message: 'There is no data to generate a PDF for the selected filters.' });
+    if (isPdfPreviewOpen.value) {
+        isPdfPreviewOpen.value = false;
+    }
     return;
   }
 
@@ -439,10 +496,28 @@ const generatePDF = () => {
     pivotData.set(date, dailyData);
   });
   
+  doc.setFontSize(18);
+  doc.text('VASA SALOON', 14, 22);
+  
+  let reportTitle = 'Daily Collections Report';
+  if (filters.startDate && filters.endDate) {
+      const start = parseISO(filters.startDate);
+      const end = parseISO(filters.endDate);
+      if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+          reportTitle = `Daily Collections for ${format(start, 'MMMM yyyy')}`;
+      } else {
+          reportTitle = `Daily Collections from ${format(parseISO(filters.startDate), 'MMM d, yyyy')} to ${format(parseISO(filters.endDate), 'MMM d, yyyy')}`;
+      }
+  }
+  
+  doc.setFontSize(14);
+  doc.text(reportTitle, 14, 30);
+  
+  if (pdfReportType.value === 'combined') {
   // Build headers for autotable
   const head: any[] = [
     [{ content: 'Date', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, ...reportBarbers.map(b => ({ content: b.name, colSpan: 2, styles: { halign: 'center' } })), { content: 'Total', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
-    reportBarbers.flatMap(() => ['No:Appoint', 'Collection'])
+      reportBarbers.flatMap(() => ['No:Appoint', 'Amount'])
   ];
 
   // Build body for autotable
@@ -467,18 +542,12 @@ const generatePDF = () => {
     const barberCollection = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.total_amount_manually_entered || 0), 0);
     grandTotalCollection += barberCollection;
     
-    footerRow.push({ content: barberAppointments.toString(), styles: { fontStyle: 'bold' } });
+      footerRow.push({ content: barberAppointments > 0 ? barberAppointments.toString() : '-', styles: { fontStyle: 'bold' } });
     footerRow.push({ content: barberCollection.toFixed(2), styles: { fontStyle: 'bold' } });
   });
   footerRow.push({ content: grandTotalCollection.toFixed(2), styles: { fontStyle: 'bold', halign: 'center' } });
   
-  body.push(footerRow);
-
-  doc.setFontSize(18);
-  doc.text('VASA SALOON - Daily Collections Report', 14, 22);
-  const dateRange = `Period: ${filters.startDate || 'Start'} to ${filters.endDate || 'End'}`;
-  doc.setFontSize(11);
-  doc.text(dateRange, 14, 30);
+    body.push(footerRow as any);
 
   autoTable(doc, {
     head: head,
@@ -490,14 +559,88 @@ const generatePDF = () => {
     columnStyles: {
       0: { halign: 'left' }
     },
-    // didDrawPage: (data) => {
-    //   // For multi-page tables, you might want a footer on each page
-    //   // This example just adds a total row at the very end.
-    // }
-  });
+    });
+  } else {
+    // Separate tables logic
+    // Appointments table
+    doc.setFontSize(14);
+    doc.text('Number of Appointments', 14, 38);
+    const appointmentsHead = [['Date', ...reportBarbers.map(b => b.name), 'Total']];
+    const appointmentsBody = uniqueDates.map(date => {
+      const row: (string|number)[] = [formatDate(date)];
+      let dailyTotal = 0;
+      reportBarbers.forEach(barber => {
+        const appointments = pivotData.get(date)?.get(barber.id)?.appointments ?? 0;
+        row.push(appointments > 0 ? appointments : '-');
+        dailyTotal += appointments;
+      });
+      row.push(dailyTotal > 0 ? dailyTotal : '-');
+      return row;
+    });
+
+    const appointmentsFooterRow: any[] = [{ content: 'Total', styles: { fontStyle: 'bold' } }];
+    let grandTotalAppointments = 0;
+    reportBarbers.forEach(barber => {
+        const barberAppointments = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.number_of_appointments || 0), 0);
+        grandTotalAppointments += barberAppointments;
+        appointmentsFooterRow.push({ content: barberAppointments > 0 ? barberAppointments.toString() : '-', styles: { fontStyle: 'bold' } });
+    });
+    appointmentsFooterRow.push({ content: grandTotalAppointments > 0 ? grandTotalAppointments.toString() : '-', styles: { fontStyle: 'bold' } });
+    appointmentsBody.push(appointmentsFooterRow as any);
+
+    autoTable(doc, {
+      head: appointmentsHead,
+      body: appointmentsBody,
+      startY: 42,
+      theme: 'grid',
+      headStyles: { fillColor: [243, 244, 246], textColor: 17, fontStyle: 'bold', halign: 'center' },
+      styles: { halign: 'center' },
+      columnStyles: { 0: { halign: 'left' } },
+    });
+
+    // Collections table
+    const lastY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(14);
+    doc.text('Amounts', 14, lastY + 10);
+    const collectionsHead = [['Date', ...reportBarbers.map(b => b.name), 'Total']];
+    const collectionsBody = uniqueDates.map(date => {
+      const row = [formatDate(date)];
+      let dailyTotal = 0;
+      reportBarbers.forEach(barber => {
+        const collection = pivotData.get(date)?.get(barber.id)?.collection ?? 0;
+        row.push(collection.toFixed(2));
+        dailyTotal += collection;
+      });
+      row.push(dailyTotal.toFixed(2));
+      return row;
+    });
+
+    const collectionsFooterRow: any[] = [{ content: 'Total', styles: { fontStyle: 'bold' } }];
+    let grandTotalCollection = 0;
+    reportBarbers.forEach(barber => {
+      const barberCollection = tableData.filter(d => d.barber_id === barber.id).reduce((sum, d) => sum + (d.total_amount_manually_entered || 0), 0);
+      grandTotalCollection += barberCollection;
+      collectionsFooterRow.push({ content: barberCollection.toFixed(2), styles: { fontStyle: 'bold' } });
+    });
+    collectionsFooterRow.push({ content: grandTotalCollection.toFixed(2), styles: { fontStyle: 'bold' } });
+    collectionsBody.push(collectionsFooterRow as any);
+
+    autoTable(doc, {
+      head: collectionsHead,
+      body: collectionsBody,
+      startY: lastY + 14,
+      theme: 'grid',
+      headStyles: { fillColor: [243, 244, 246], textColor: 17, fontStyle: 'bold', halign: 'center' },
+      styles: { halign: 'center' },
+      columnStyles: { 0: { halign: 'left' } },
+    });
+  }
   
   pdfSrc.value = doc.output('datauristring');
+
+  if (!isPdfPreviewOpen.value) {
   isPdfPreviewOpen.value = true;
+  }
 };
 
 onMounted(async () => {
